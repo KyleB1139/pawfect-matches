@@ -2,15 +2,13 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
-// VAPID public key - this needs to be set as VITE_VAPID_PUBLIC_KEY environment variable
-const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined;
-
 export function usePushNotifications() {
   const { user } = useAuth();
   const [permission, setPermission] = useState<NotificationPermission>('default');
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isSupported, setIsSupported] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [vapidKey, setVapidKey] = useState<string | null>(null);
 
   useEffect(() => {
     const supported = 'serviceWorker' in navigator && 'PushManager' in window;
@@ -18,9 +16,20 @@ export function usePushNotifications() {
     
     if (supported) {
       setPermission(Notification.permission);
+      fetchVapidKey();
       checkSubscription();
     }
   }, [user]);
+
+  const fetchVapidKey = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('get-vapid-key');
+      if (error) throw error;
+      setVapidKey(data.publicKey);
+    } catch (error) {
+      console.error('Error fetching VAPID key:', error);
+    }
+  };
 
   const checkSubscription = useCallback(async () => {
     if (!user) return;
@@ -60,7 +69,7 @@ export function usePushNotifications() {
   };
 
   const subscribe = useCallback(async () => {
-    if (!user || !VAPID_PUBLIC_KEY) {
+    if (!user || !vapidKey) {
       console.error('Missing user or VAPID key');
       return false;
     }
@@ -80,7 +89,7 @@ export function usePushNotifications() {
       const registration = await registerServiceWorker();
 
       // Subscribe to push
-      const applicationServerKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+      const applicationServerKey = urlBase64ToUint8Array(vapidKey);
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: applicationServerKey.buffer as ArrayBuffer,
@@ -109,7 +118,7 @@ export function usePushNotifications() {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, vapidKey]);
 
   const unsubscribe = useCallback(async () => {
     if (!user) return false;
