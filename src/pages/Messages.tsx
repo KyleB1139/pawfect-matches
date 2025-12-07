@@ -1,0 +1,367 @@
+import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import Navigation from "@/components/Navigation";
+import { toast } from "@/hooks/use-toast";
+import { Dog, ArrowLeft, Send } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import type { ProfileData } from "./Discover";
+
+interface Conversation {
+  id: string;
+  participant_1_id: string;
+  participant_2_id: string;
+  created_at: string;
+  updated_at: string;
+  other_profile: ProfileData;
+  last_message?: Message;
+}
+
+interface Message {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  content: string;
+  created_at: string;
+  read_at: string | null;
+}
+
+const Messages = () => {
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+  
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [newMessage, setNewMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [userProfileId, setUserProfileId] = useState<string | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate("/auth");
+    }
+  }, [user, loading, navigate]);
+
+  useEffect(() => {
+    if (user) {
+      fetchUserProfile();
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (userProfileId) {
+      fetchConversations();
+    }
+  }, [userProfileId]);
+
+  useEffect(() => {
+    if (activeConversation) {
+      fetchMessages(activeConversation.id);
+      
+      // Subscribe to new messages
+      const channel = supabase
+        .channel(`messages:${activeConversation.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'messages',
+            filter: `conversation_id=eq.${activeConversation.id}`,
+          },
+          (payload) => {
+            const newMsg = payload.new as Message;
+            setMessages((prev) => {
+              if (prev.some(m => m.id === newMsg.id)) return prev;
+              return [...prev, newMsg];
+            });
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [activeConversation]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const fetchUserProfile = async () => {
+    if (!user) return;
+    
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    
+    if (!error && data) {
+      setUserProfileId(data.id);
+    }
+  };
+
+  const fetchConversations = async () => {
+    if (!userProfileId) return;
+    
+    setIsLoading(true);
+    
+    const { data: convos, error } = await supabase
+      .from("conversations")
+      .select("*")
+      .or(`participant_1_id.eq.${userProfileId},participant_2_id.eq.${userProfileId}`)
+      .order("updated_at", { ascending: false });
+    
+    if (error) {
+      console.error("Error fetching conversations:", error);
+      setIsLoading(false);
+      return;
+    }
+
+    if (!convos || convos.length === 0) {
+      setConversations([]);
+      setIsLoading(false);
+      return;
+    }
+
+    // Fetch other participants' profiles
+    const otherProfileIds = convos.map(c => 
+      c.participant_1_id === userProfileId ? c.participant_2_id : c.participant_1_id
+    );
+
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("*")
+      .in("id", otherProfileIds);
+
+    // Fetch last message for each conversation
+    const conversationsWithProfiles: Conversation[] = await Promise.all(
+      convos.map(async (convo) => {
+        const otherId = convo.participant_1_id === userProfileId 
+          ? convo.participant_2_id 
+          : convo.participant_1_id;
+        
+        const otherProfile = profiles?.find(p => p.id === otherId);
+        
+        const { data: lastMsg } = await supabase
+          .from("messages")
+          .select("*")
+          .eq("conversation_id", convo.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        return {
+          ...convo,
+          other_profile: otherProfile as ProfileData,
+          last_message: lastMsg || undefined,
+        };
+      })
+    );
+
+    setConversations(conversationsWithProfiles);
+    setIsLoading(false);
+  };
+
+  const fetchMessages = async (conversationId: string) => {
+    const { data, error } = await supabase
+      .from("messages")
+      .select("*")
+      .eq("conversation_id", conversationId)
+      .order("created_at", { ascending: true });
+    
+    if (error) {
+      console.error("Error fetching messages:", error);
+      return;
+    }
+
+    setMessages(data || []);
+  };
+
+  const sendMessage = async () => {
+    if (!newMessage.trim() || !activeConversation || !userProfileId) return;
+
+    const { error } = await supabase
+      .from("messages")
+      .insert({
+        conversation_id: activeConversation.id,
+        sender_id: userProfileId,
+        content: newMessage.trim(),
+      });
+
+    if (error) {
+      console.error("Error sending message:", error);
+      toast({
+        title: "Failed to send message",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Update conversation timestamp
+    await supabase
+      .from("conversations")
+      .update({ updated_at: new Date().toISOString() })
+      .eq("id", activeConversation.id);
+
+    setNewMessage("");
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  };
+
+  if (loading || isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Dog className="w-12 h-12 text-primary animate-pulse" />
+      </div>
+    );
+  }
+
+  // Chat view
+  if (activeConversation) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        {/* Chat Header */}
+        <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border">
+          <div className="max-w-md mx-auto px-4 py-3 flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setActiveConversation(null)}
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <img
+              src={activeConversation.other_profile?.dog_photo_url || activeConversation.other_profile?.avatar_url || "/placeholder.svg"}
+              alt={activeConversation.other_profile?.dog_name || ""}
+              className="w-10 h-10 rounded-full object-cover border border-border"
+            />
+            <div className="flex-1">
+              <h2 className="font-semibold text-foreground">
+                {activeConversation.other_profile?.dog_name || activeConversation.other_profile?.name}
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                {activeConversation.other_profile?.dog_breed}
+              </p>
+            </div>
+          </div>
+        </header>
+
+        {/* Messages */}
+        <ScrollArea className="flex-1 px-4 py-4">
+          <div className="max-w-md mx-auto space-y-3">
+            {messages.map((msg) => (
+              <div
+                key={msg.id}
+                className={`flex ${msg.sender_id === userProfileId ? "justify-end" : "justify-start"}`}
+              >
+                <div
+                  className={`max-w-[75%] px-4 py-2 rounded-2xl ${
+                    msg.sender_id === userProfileId
+                      ? "bg-primary text-primary-foreground rounded-br-md"
+                      : "bg-muted text-foreground rounded-bl-md"
+                  }`}
+                >
+                  <p className="text-sm">{msg.content}</p>
+                  <p className={`text-xs mt-1 ${
+                    msg.sender_id === userProfileId ? "text-primary-foreground/70" : "text-muted-foreground"
+                  }`}>
+                    {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </div>
+              </div>
+            ))}
+            <div ref={messagesEndRef} />
+          </div>
+        </ScrollArea>
+
+        {/* Message Input */}
+        <div className="sticky bottom-0 bg-background border-t border-border p-4">
+          <div className="max-w-md mx-auto flex gap-2">
+            <Input
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="Type a message..."
+              className="flex-1"
+            />
+            <Button onClick={sendMessage} size="icon" disabled={!newMessage.trim()}>
+              <Send className="w-5 h-5" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Conversations list
+  return (
+    <div className="min-h-screen bg-background pb-24">
+      {/* Header */}
+      <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border">
+        <div className="max-w-md mx-auto px-4 py-4 flex items-center justify-center">
+          <h1 className="font-display text-2xl font-bold text-gradient">Messages</h1>
+        </div>
+      </header>
+
+      {/* Conversations List */}
+      <main className="max-w-md mx-auto px-4 py-4">
+        {conversations.length > 0 ? (
+          <div className="space-y-2">
+            {conversations.map((convo) => (
+              <Card
+                key={convo.id}
+                className="p-4 flex items-center gap-4 cursor-pointer hover:bg-accent/50 transition-colors"
+                onClick={() => setActiveConversation(convo)}
+              >
+                <img
+                  src={convo.other_profile?.dog_photo_url || convo.other_profile?.avatar_url || "/placeholder.svg"}
+                  alt={convo.other_profile?.dog_name || ""}
+                  className="w-14 h-14 rounded-full object-cover border-2 border-border"
+                />
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-foreground truncate">
+                    {convo.other_profile?.dog_name || convo.other_profile?.name}
+                  </h3>
+                  <p className="text-sm text-muted-foreground truncate">
+                    {convo.last_message?.content || "Start a conversation!"}
+                  </p>
+                </div>
+                {convo.last_message && (
+                  <span className="text-xs text-muted-foreground shrink-0">
+                    {new Date(convo.last_message.created_at).toLocaleDateString()}
+                  </span>
+                )}
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-20 space-y-4">
+            <Dog className="w-16 h-16 mx-auto text-muted-foreground" />
+            <h2 className="text-xl font-semibold text-foreground">No messages yet</h2>
+            <p className="text-muted-foreground">
+              Match with someone to start chatting!
+            </p>
+          </div>
+        )}
+      </main>
+
+      <Navigation />
+    </div>
+  );
+};
+
+export default Messages;

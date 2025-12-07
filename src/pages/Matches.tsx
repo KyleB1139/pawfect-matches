@@ -19,6 +19,7 @@ const Matches = () => {
   
   const [matches, setMatches] = useState<MatchWithProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [userProfileId, setUserProfileId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -49,6 +50,8 @@ const Matches = () => {
       setIsLoading(false);
       return;
     }
+
+    setUserProfileId(userProfile.id);
 
     // Get mutual matches using the function
     const { data: matchData, error: matchError } = await supabase
@@ -105,11 +108,39 @@ const Matches = () => {
     setIsLoading(false);
   };
 
-  const handleMessage = (match: MatchWithProfile) => {
-    toast({
-      title: "Messages coming soon!",
-      description: `Chat with ${match.name} will be available soon.`,
-    });
+  const handleMessage = async (match: MatchWithProfile) => {
+    if (!userProfileId) return;
+
+    // Check if conversation already exists
+    const { data: existing } = await supabase
+      .from("conversations")
+      .select("id")
+      .or(`and(participant_1_id.eq.${userProfileId},participant_2_id.eq.${match.id}),and(participant_1_id.eq.${match.id},participant_2_id.eq.${userProfileId})`)
+      .maybeSingle();
+
+    if (existing) {
+      navigate("/messages");
+      return;
+    }
+
+    // Create new conversation
+    const { error } = await supabase
+      .from("conversations")
+      .insert({
+        participant_1_id: userProfileId,
+        participant_2_id: match.id,
+      });
+
+    if (error) {
+      console.error("Error creating conversation:", error);
+      toast({
+        title: "Error starting chat",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    navigate("/messages");
   };
 
   if (loading || isLoading) {
