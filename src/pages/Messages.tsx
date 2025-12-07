@@ -189,12 +189,15 @@ const Messages = () => {
   const sendMessage = async () => {
     if (!newMessage.trim() || !activeConversation || !userProfileId) return;
 
+    const messageContent = newMessage.trim();
+    setNewMessage("");
+
     const { error } = await supabase
       .from("messages")
       .insert({
         conversation_id: activeConversation.id,
         sender_id: userProfileId,
-        content: newMessage.trim(),
+        content: messageContent,
       });
 
     if (error) {
@@ -203,6 +206,7 @@ const Messages = () => {
         title: "Failed to send message",
         variant: "destructive",
       });
+      setNewMessage(messageContent);
       return;
     }
 
@@ -212,7 +216,42 @@ const Messages = () => {
       .update({ updated_at: new Date().toISOString() })
       .eq("id", activeConversation.id);
 
-    setNewMessage("");
+    // Send push notification to recipient
+    try {
+      const recipientProfileId = activeConversation.participant_1_id === userProfileId
+        ? activeConversation.participant_2_id
+        : activeConversation.participant_1_id;
+
+      // Get the recipient's user_id from their profile
+      const { data: recipientProfile } = await supabase
+        .from("profiles")
+        .select("user_id, name")
+        .eq("id", recipientProfileId)
+        .single();
+
+      if (recipientProfile) {
+        // Get sender name
+        const { data: senderProfile } = await supabase
+          .from("profiles")
+          .select("dog_name, name")
+          .eq("id", userProfileId)
+          .single();
+
+        const senderName = senderProfile?.dog_name || senderProfile?.name || "Someone";
+
+        await supabase.functions.invoke("send-push-notification", {
+          body: {
+            userId: recipientProfile.user_id,
+            title: `New message from ${senderName}`,
+            body: messageContent.length > 50 ? messageContent.substring(0, 50) + "..." : messageContent,
+            url: "/messages",
+          },
+        });
+      }
+    } catch (pushError) {
+      console.error("Failed to send push notification:", pushError);
+      // Don't show error to user - push notification is non-critical
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
