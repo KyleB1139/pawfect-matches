@@ -41,23 +41,54 @@ const Discover = () => {
     }
   }, [user, loading, navigate]);
 
+  const [userProfileId, setUserProfileId] = useState<string | null>(null);
+
   useEffect(() => {
     if (user) {
+      fetchUserProfile();
       fetchProfiles();
     }
   }, [user]);
+
+  const fetchUserProfile = async () => {
+    if (!user) return;
+    
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    
+    if (!error && data) {
+      setUserProfileId(data.id);
+    }
+  };
 
   const fetchProfiles = async () => {
     if (!user) return;
     
     setIsLoading(true);
     
-    // Fetch profiles excluding current user
-    const { data, error } = await supabase
+    // Get already liked profiles to exclude them
+    const { data: likedData } = await supabase
+      .from("likes")
+      .select("liked_profile_id")
+      .eq("user_id", (await supabase.from("profiles").select("id").eq("user_id", user.id).maybeSingle()).data?.id || "");
+    
+    const likedIds = likedData?.map(l => l.liked_profile_id) || [];
+    
+    // Fetch profiles excluding current user and already liked
+    let query = supabase
       .from("profiles")
       .select("*")
       .neq("user_id", user.id)
       .not("dog_name", "is", null);  // Only show profiles with dogs
+    
+    if (likedIds.length > 0) {
+      query = query.not("id", "in", `(${likedIds.join(",")})`);
+    }
+    
+    const { data, error } = await query;
     
     if (error) {
       console.error("Error fetching profiles:", error);
@@ -75,9 +106,32 @@ const Discover = () => {
 
   const currentProfile = profiles[currentIndex];
 
-  const handleLike = () => {
-    // Simulate a 30% chance of matching
-    if (Math.random() < 0.3) {
+  const handleLike = async () => {
+    if (!userProfileId || !currentProfile) return;
+    
+    // Save the like to database
+    const { error } = await supabase
+      .from("likes")
+      .insert({
+        user_id: userProfileId,
+        liked_profile_id: currentProfile.id,
+      });
+    
+    if (error) {
+      console.error("Error saving like:", error);
+      goToNext();
+      return;
+    }
+
+    // Check if this creates a mutual match
+    const { data: matchData } = await supabase
+      .rpc("get_user_matches", { _user_id: userProfileId });
+    
+    const isMatch = matchData?.some(
+      (m: { matched_user_id: string }) => m.matched_user_id === currentProfile.id
+    );
+
+    if (isMatch) {
       setMatchedProfile(currentProfile);
     } else {
       goToNext();
@@ -88,13 +142,39 @@ const Discover = () => {
     goToNext();
   };
 
-  const handleSuperLike = () => {
+  const handleSuperLike = async () => {
+    if (!userProfileId || !currentProfile) return;
+    
+    // Save the like to database
+    const { error } = await supabase
+      .from("likes")
+      .insert({
+        user_id: userProfileId,
+        liked_profile_id: currentProfile.id,
+      });
+    
+    if (error && error.code !== "23505") { // Ignore duplicate key error
+      console.error("Error saving super like:", error);
+    }
+
     toast({
       title: "Super Like sent! ⭐",
       description: `${currentProfile?.name} will be notified!`,
     });
-    // Super likes always match for demo purposes
-    setMatchedProfile(currentProfile);
+
+    // Check if this creates a mutual match
+    const { data: matchData } = await supabase
+      .rpc("get_user_matches", { _user_id: userProfileId });
+    
+    const isMatch = matchData?.some(
+      (m: { matched_user_id: string }) => m.matched_user_id === currentProfile.id
+    );
+
+    if (isMatch) {
+      setMatchedProfile(currentProfile);
+    } else {
+      goToNext();
+    }
   };
 
   const goToNext = () => {

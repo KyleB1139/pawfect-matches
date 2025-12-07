@@ -99,25 +99,16 @@ export type Database = {
       }
     }
     Views: {
-      matches: {
-        Row: {
-          matched_at: string | null
-          matched_user_id: string | null
-          user_id: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "likes_liked_profile_id_fkey"
-            columns: ["matched_user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+      [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_matches: {
+        Args: { _user_id: string }
+        Returns: {
+          matched_at: string
+          matched_user_id: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
