@@ -1,11 +1,35 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Dog, Heart, Users, Sparkles } from "lucide-react";
+import { Dog, Heart, Users, Sparkles, LogIn } from "lucide-react";
 import heroImage from "@/assets/hero-image.jpg";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Index = () => {
+  const { user } = useAuth();
+  
   return (
     <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="absolute top-0 left-0 right-0 z-20 p-4">
+        <div className="max-w-6xl mx-auto flex justify-end">
+          {user ? (
+            <Link to="/discover">
+              <Button variant="hero" size="sm">
+                <Heart className="w-4 h-4 mr-2" />
+                Start Swiping
+              </Button>
+            </Link>
+          ) : (
+            <Link to="/auth">
+              <Button variant="hero" size="sm">
+                <LogIn className="w-4 h-4 mr-2" />
+                Sign In
+              </Button>
+            </Link>
+          )}
+        </div>
+      </header>
+
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
         {/* Background Image */}

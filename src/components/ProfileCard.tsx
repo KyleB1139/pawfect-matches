@@ -2,11 +2,11 @@ import { useState } from "react";
 import { Heart, X, Star, MapPin, Dog } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Profile } from "@/data/profiles";
+import { ProfileData } from "@/pages/Discover";
 import { cn } from "@/lib/utils";
 
 interface ProfileCardProps {
-  profile: Profile;
+  profile: ProfileData;
   onLike: () => void;
   onNope: () => void;
   onSuperLike: () => void;
@@ -26,6 +26,9 @@ const ProfileCard = ({ profile, onLike, onNope, onSuperLike }: ProfileCardProps)
     setTimeout(onNope, 400);
   };
 
+  // Use dog photo or avatar as the main image
+  const displayImage = profile.dog_photo_url || profile.avatar_url || "/placeholder.svg";
+
   return (
     <div
       className={cn(
@@ -41,8 +44,8 @@ const ProfileCard = ({ profile, onLike, onNope, onSuperLike }: ProfileCardProps)
       >
         {/* Image */}
         <img
-          src={profile.image}
-          alt={`${profile.name} with ${profile.dog.name}`}
+          src={displayImage}
+          alt={`${profile.name} with ${profile.dog_name}`}
           className="absolute inset-0 w-full h-full object-cover"
         />
 
@@ -65,49 +68,57 @@ const ProfileCard = ({ profile, onLike, onNope, onSuperLike }: ProfileCardProps)
         <div className="absolute bottom-0 left-0 right-0 p-6 text-primary-foreground">
           {/* Dog Breed Badge */}
           <div className="flex items-center gap-2 mb-3">
-            <Badge variant="breed" className="flex items-center gap-1">
-              <Dog className="w-3 h-3" />
-              {profile.dog.breed}
-            </Badge>
-            {profile.dog.friendly && (
+            {profile.dog_breed && (
+              <Badge variant="breed" className="flex items-center gap-1">
+                <Dog className="w-3 h-3" />
+                {profile.dog_breed}
+              </Badge>
+            )}
+            {profile.dog_friendly && (
               <Badge variant="friendly">Dog Friendly</Badge>
             )}
           </div>
 
           {/* Name & Age */}
           <h2 className="font-display text-3xl font-bold mb-1">
-            {profile.name}, {profile.age}
+            {profile.name}{profile.age ? `, ${profile.age}` : ""}
           </h2>
 
           {/* Location */}
-          <div className="flex items-center gap-1 text-primary-foreground/80 mb-3">
-            <MapPin className="w-4 h-4" />
-            <span className="text-sm">{profile.location}</span>
-          </div>
+          {profile.location && (
+            <div className="flex items-center gap-1 text-primary-foreground/80 mb-3">
+              <MapPin className="w-4 h-4" />
+              <span className="text-sm">{profile.location}</span>
+            </div>
+          )}
 
           {/* Bio (expandable) */}
-          <p
-            className={cn(
-              "text-sm text-primary-foreground/90 transition-all duration-300",
-              showDetails ? "line-clamp-none" : "line-clamp-2"
-            )}
-          >
-            {profile.bio}
-          </p>
+          {profile.bio && (
+            <p
+              className={cn(
+                "text-sm text-primary-foreground/90 transition-all duration-300",
+                showDetails ? "line-clamp-none" : "line-clamp-2"
+              )}
+            >
+              {profile.bio}
+            </p>
+          )}
 
           {/* Dog Details (expandable) */}
-          {showDetails && (
+          {showDetails && profile.dog_name && (
             <div className="mt-4 p-3 bg-background/10 backdrop-blur-sm rounded-xl">
               <p className="font-semibold text-sm mb-2">
-                🐕 {profile.dog.name} • {profile.dog.age} years old
+                🐕 {profile.dog_name} {profile.dog_age ? `• ${profile.dog_age} years old` : ""}
               </p>
-              <div className="flex flex-wrap gap-1">
-                {profile.dog.friendlyWith.map((type) => (
-                  <Badge key={type} variant="info" className="text-xs bg-background/20 text-primary-foreground/90">
-                    {type}
-                  </Badge>
-                ))}
-              </div>
+              {profile.dog_friendly_with && profile.dog_friendly_with.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {profile.dog_friendly_with.map((type) => (
+                    <Badge key={type} variant="info" className="text-xs bg-background/20 text-primary-foreground/90">
+                      {type}
+                    </Badge>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>

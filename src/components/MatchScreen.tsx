@@ -1,14 +1,16 @@
 import { Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Profile } from "@/data/profiles";
+import { ProfileData } from "@/pages/Discover";
 
 interface MatchScreenProps {
-  profile: Profile;
+  profile: ProfileData;
   onContinue: () => void;
   onMessage: () => void;
 }
 
 const MatchScreen = ({ profile, onContinue, onMessage }: MatchScreenProps) => {
+  const displayImage = profile.dog_photo_url || profile.avatar_url || "/placeholder.svg";
+  
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/80 backdrop-blur-sm">
       <div className="text-center animate-match-pop">
@@ -17,7 +19,7 @@ const MatchScreen = ({ profile, onContinue, onMessage }: MatchScreenProps) => {
           <div className="flex items-center justify-center gap-4">
             <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-primary shadow-card-hover">
               <img
-                src={profile.image}
+                src={displayImage}
                 alt={profile.name}
                 className="w-full h-full object-cover"
               />

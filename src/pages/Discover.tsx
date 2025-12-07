@@ -1,14 +1,77 @@
-import { useState } from "react";
-import { mockProfiles, Profile } from "@/data/profiles";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import ProfileCard from "@/components/ProfileCard";
 import MatchScreen from "@/components/MatchScreen";
 import Navigation from "@/components/Navigation";
 import { toast } from "@/hooks/use-toast";
+import { Dog } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
+
+export interface ProfileData {
+  id: string;
+  user_id: string;
+  name: string;
+  age: number | null;
+  bio: string | null;
+  location: string | null;
+  avatar_url: string | null;
+  dog_name: string | null;
+  dog_breed: string | null;
+  dog_age: number | null;
+  dog_friendly: boolean | null;
+  dog_friendly_with: string[] | null;
+  dog_photo_url: string | null;
+}
 
 const Discover = () => {
-  const [profiles, setProfiles] = useState<Profile[]>(mockProfiles);
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+  
+  const [profiles, setProfiles] = useState<ProfileData[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [matchedProfile, setMatchedProfile] = useState<Profile | null>(null);
+  const [matchedProfile, setMatchedProfile] = useState<ProfileData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate("/auth");
+    }
+  }, [user, loading, navigate]);
+
+  useEffect(() => {
+    if (user) {
+      fetchProfiles();
+    }
+  }, [user]);
+
+  const fetchProfiles = async () => {
+    if (!user) return;
+    
+    setIsLoading(true);
+    
+    // Fetch profiles excluding current user
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .neq("user_id", user.id)
+      .not("dog_name", "is", null);  // Only show profiles with dogs
+    
+    if (error) {
+      console.error("Error fetching profiles:", error);
+      toast({
+        title: "Error loading profiles",
+        description: "Please try again later.",
+        variant: "destructive",
+      });
+    } else {
+      setProfiles(data || []);
+    }
+    
+    setIsLoading(false);
+  };
 
   const currentProfile = profiles[currentIndex];
 
@@ -28,7 +91,7 @@ const Discover = () => {
   const handleSuperLike = () => {
     toast({
       title: "Super Like sent! ⭐",
-      description: `${currentProfile.name} will be notified!`,
+      description: `${currentProfile?.name} will be notified!`,
     });
     // Super likes always match for demo purposes
     setMatchedProfile(currentProfile);
@@ -56,6 +119,14 @@ const Discover = () => {
     goToNext();
   };
 
+  if (loading || isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Dog className="w-12 h-12 text-primary animate-pulse" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background pb-24">
       {/* Header */}
@@ -75,8 +146,15 @@ const Discover = () => {
             onSuperLike={handleSuperLike}
           />
         ) : (
-          <div className="text-center py-20">
+          <div className="text-center py-20 space-y-4">
+            <Dog className="w-16 h-16 mx-auto text-muted-foreground" />
             <p className="text-muted-foreground">No more profiles to show!</p>
+            <p className="text-sm text-muted-foreground">
+              Be the first to create a profile and attract dog lovers.
+            </p>
+            <Link to="/profile">
+              <Button>Complete Your Profile</Button>
+            </Link>
           </div>
         )}
       </main>

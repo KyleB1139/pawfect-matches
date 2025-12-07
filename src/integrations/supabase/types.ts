@@ -14,7 +14,60 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          age: number | null
+          avatar_url: string | null
+          bio: string | null
+          created_at: string
+          dog_age: number | null
+          dog_breed: string | null
+          dog_friendly: boolean | null
+          dog_friendly_with: string[] | null
+          dog_name: string | null
+          dog_photo_url: string | null
+          id: string
+          location: string | null
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          age?: number | null
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          dog_age?: number | null
+          dog_breed?: string | null
+          dog_friendly?: boolean | null
+          dog_friendly_with?: string[] | null
+          dog_name?: string | null
+          dog_photo_url?: string | null
+          id?: string
+          location?: string | null
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          age?: number | null
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          dog_age?: number | null
+          dog_breed?: string | null
+          dog_friendly?: boolean | null
+          dog_friendly_with?: string[] | null
+          dog_name?: string | null
+          dog_photo_url?: string | null
+          id?: string
+          location?: string | null
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
