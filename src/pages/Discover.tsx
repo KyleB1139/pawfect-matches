@@ -8,7 +8,7 @@ import Navigation from "@/components/Navigation";
 import MatchFiltersComponent, { MatchFilters } from "@/components/MatchFilters";
 import { useDistanceUnit } from "@/hooks/useDistanceUnit";
 import { toast } from "@/hooks/use-toast";
-import { Dog } from "lucide-react";
+import { Dog, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
@@ -40,6 +40,7 @@ const Discover = () => {
   const [matchedProfile, setMatchedProfile] = useState<ProfileData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [superLikesRemaining, setSuperLikesRemaining] = useState(3);
   const [filters, setFilters] = useState<MatchFilters>({
     breed: "",
     minAge: null,
@@ -119,8 +120,27 @@ const Discover = () => {
     if (user) {
       fetchUserProfile();
       fetchProfiles();
+      fetchSuperLikeCount();
     }
   }, [user]);
+
+  const fetchSuperLikeCount = async () => {
+    if (!user) return;
+    
+    const { data: userProfile } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!userProfile) return;
+
+    const { data: count } = await supabase
+      .rpc("get_daily_super_like_count", { _user_profile_id: userProfile.id });
+
+    const used = count || 0;
+    setSuperLikesRemaining(Math.max(0, 3 - used));
+  };
 
   const fetchUserProfile = async () => {
     if (!user) return;
@@ -290,21 +310,74 @@ const Discover = () => {
   const handleSuperLike = async () => {
     if (!userProfileId || !currentProfile) return;
     
-    // Save the like to database
-    const { error } = await supabase
+    // Check daily limit
+    if (superLikesRemaining <= 0) {
+      toast({
+        title: "No Super Likes left",
+        description: "You've used all 3 Super Likes for today. Come back tomorrow!",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Record the super like
+    const { error: superLikeError } = await supabase
+      .from("super_likes")
+      .insert({
+        user_id: userProfileId,
+        liked_profile_id: currentProfile.id,
+      });
+
+    if (superLikeError && superLikeError.code !== "23505") {
+      console.error("Error saving super like:", superLikeError);
+      toast({
+        title: "Error",
+        description: "Failed to send Super Like. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Also add a regular like
+    const { error: likeError } = await supabase
       .from("likes")
       .insert({
         user_id: userProfileId,
         liked_profile_id: currentProfile.id,
       });
     
-    if (error && error.code !== "23505") { // Ignore duplicate key error
-      console.error("Error saving super like:", error);
+    if (likeError && likeError.code !== "23505") {
+      console.error("Error saving like:", likeError);
+    }
+
+    // Update remaining count
+    setSuperLikesRemaining(prev => Math.max(0, prev - 1));
+
+    // Send push notification to the recipient
+    try {
+      const { data: myProfile } = await supabase
+        .from("profiles")
+        .select("dog_name, name")
+        .eq("id", userProfileId)
+        .single();
+
+      const myName = myProfile?.dog_name || myProfile?.name || "Someone";
+
+      await supabase.functions.invoke("send-push-notification", {
+        body: {
+          userId: currentProfile.user_id,
+          title: "⭐ You got a Super Like!",
+          body: `${myName} super liked you! Check them out!`,
+          url: "/discover",
+        },
+      });
+    } catch (pushError) {
+      console.error("Failed to send super like notification:", pushError);
     }
 
     toast({
       title: "Super Like sent! ⭐",
-      description: `${currentProfile?.name} will be notified!`,
+      description: `${currentProfile.name} will be notified! (${superLikesRemaining - 1} left today)`,
     });
 
     // Check if this creates a mutual match
@@ -450,34 +523,46 @@ const Discover = () => {
       {/* Main Content */}
       <main className="max-w-md mx-auto px-4 py-6">
         {currentProfile ? (
-          <ProfileCard
-            profile={currentProfile}
-            onLike={handleLike}
-            onNope={handleNope}
-            onSuperLike={handleSuperLike}
-            distance={
-              userLocation && currentProfile.latitude && currentProfile.longitude
-                ? calculateDistance(
-                    userLocation.lat,
-                    userLocation.lng,
-                    currentProfile.latitude,
-                    currentProfile.longitude
-                  )
-                : null
-            }
-            distanceLabel={
-              userLocation && currentProfile.latitude && currentProfile.longitude
-                ? formatDistance(
-                    calculateDistance(
+          <>
+            {/* Super Like Counter */}
+            <div className="flex justify-center mb-4">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-accent/10 rounded-full">
+                <Star className="w-4 h-4 text-accent fill-accent" />
+                <span className="text-sm font-medium">
+                  {superLikesRemaining} Super {superLikesRemaining === 1 ? 'Like' : 'Likes'} left today
+                </span>
+              </div>
+            </div>
+            <ProfileCard
+              profile={currentProfile}
+              onLike={handleLike}
+              onNope={handleNope}
+              onSuperLike={handleSuperLike}
+              superLikesRemaining={superLikesRemaining}
+              distance={
+                userLocation && currentProfile.latitude && currentProfile.longitude
+                  ? calculateDistance(
                       userLocation.lat,
                       userLocation.lng,
                       currentProfile.latitude,
                       currentProfile.longitude
                     )
-                  )
-                : undefined
-            }
-          />
+                  : null
+              }
+              distanceLabel={
+                userLocation && currentProfile.latitude && currentProfile.longitude
+                  ? formatDistance(
+                      calculateDistance(
+                        userLocation.lat,
+                        userLocation.lng,
+                        currentProfile.latitude,
+                        currentProfile.longitude
+                      )
+                    )
+                  : undefined
+              }
+            />
+          </>
         ) : (
           <div className="text-center py-20 space-y-4">
             <Dog className="w-16 h-16 mx-auto text-muted-foreground" />
