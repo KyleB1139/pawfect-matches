@@ -18,6 +18,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Filter, X, MapPin } from "lucide-react";
+import { useDistanceUnit } from "@/hooks/useDistanceUnit";
 
 export interface MatchFilters {
   breed: string;
@@ -45,6 +46,7 @@ const MatchFiltersComponent = ({
   onRequestLocation,
 }: MatchFiltersProps) => {
   const [isOpen, setIsOpen] = useState(false);
+  const { unit, formatDistance, convertToDisplay, convertToKm } = useDistanceUnit();
 
   const hasActiveFilters =
     filters.breed ||
@@ -100,21 +102,21 @@ const MatchFiltersComponent = ({
             {userHasLocation ? (
               <>
                 <Slider
-                  value={[filters.maxDistance ?? 100]}
+                  value={[Math.round(convertToDisplay(filters.maxDistance ?? 100))]}
                   onValueChange={([value]) =>
-                    onFiltersChange({ ...filters, maxDistance: value })
+                    onFiltersChange({ ...filters, maxDistance: Math.round(convertToKm(value)) })
                   }
                   min={1}
-                  max={100}
+                  max={unit === "km" ? 100 : 62}
                   step={1}
                   className="w-full"
                 />
                 <div className="flex justify-between text-sm text-muted-foreground">
-                  <span>1 km</span>
+                  <span>1 {unit === "km" ? "km" : "mi"}</span>
                   <span className="font-medium text-foreground">
-                    {filters.maxDistance ?? 100} km
+                    {formatDistance(filters.maxDistance ?? 100)}
                   </span>
-                  <span>100 km</span>
+                  <span>{unit === "km" ? "100 km" : "62 mi"}</span>
                 </div>
               </>
             ) : (

@@ -6,6 +6,7 @@ import ProfileCard from "@/components/ProfileCard";
 import MatchScreen from "@/components/MatchScreen";
 import Navigation from "@/components/Navigation";
 import MatchFiltersComponent, { MatchFilters } from "@/components/MatchFilters";
+import { useDistanceUnit } from "@/hooks/useDistanceUnit";
 import { toast } from "@/hooks/use-toast";
 import { Dog } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,7 @@ export interface ProfileData {
 const Discover = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const { formatDistance } = useDistanceUnit();
   
   const [profiles, setProfiles] = useState<ProfileData[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -453,6 +455,28 @@ const Discover = () => {
             onLike={handleLike}
             onNope={handleNope}
             onSuperLike={handleSuperLike}
+            distance={
+              userLocation && currentProfile.latitude && currentProfile.longitude
+                ? calculateDistance(
+                    userLocation.lat,
+                    userLocation.lng,
+                    currentProfile.latitude,
+                    currentProfile.longitude
+                  )
+                : null
+            }
+            distanceLabel={
+              userLocation && currentProfile.latitude && currentProfile.longitude
+                ? formatDistance(
+                    calculateDistance(
+                      userLocation.lat,
+                      userLocation.lng,
+                      currentProfile.latitude,
+                      currentProfile.longitude
+                    )
+                  )
+                : undefined
+            }
           />
         ) : (
           <div className="text-center py-20 space-y-4">
