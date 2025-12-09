@@ -8,8 +8,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 import Navigation from "@/components/Navigation";
-import { Dog, Camera, Save, Settings, X } from "lucide-react";
+import { Dog, Camera, Save, Settings, X, Heart, ThumbsDown, Users } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 const dogBreeds = [
@@ -29,6 +30,7 @@ const Profile = () => {
   const [dogPhotoFile, setDogPhotoFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [dogPhotoPreview, setDogPhotoPreview] = useState<string | null>(null);
+  const [stats, setStats] = useState({ passes: 0, likes: 0, matches: 0 });
   
   const [profile, setProfile] = useState({
     name: "",
@@ -53,8 +55,41 @@ const Profile = () => {
   useEffect(() => {
     if (user) {
       fetchProfile();
+      fetchStats();
     }
   }, [user]);
+
+  const fetchStats = async () => {
+    if (!user) return;
+
+    // Get user's profile ID
+    const { data: userProfile } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!userProfile) return;
+
+    // Fetch counts in parallel
+    const [passesResult, likesResult, matchesResult] = await Promise.all([
+      supabase
+        .from("passes" as any)
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", userProfile.id),
+      supabase
+        .from("likes")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", userProfile.id),
+      supabase.rpc("get_user_matches", { _user_id: userProfile.id }),
+    ]);
+
+    setStats({
+      passes: passesResult.count || 0,
+      likes: likesResult.count || 0,
+      matches: matchesResult.data?.length || 0,
+    });
+  };
 
   const fetchProfile = async () => {
     if (!user) return;
@@ -206,6 +241,25 @@ const Profile = () => {
 
       {/* Profile Form */}
       <main className="max-w-md mx-auto px-4 py-6 space-y-8">
+        {/* Stats Section */}
+        <section className="grid grid-cols-3 gap-3">
+          <Card className="p-4 text-center">
+            <Heart className="w-5 h-5 mx-auto text-primary mb-1" />
+            <p className="text-2xl font-bold text-foreground">{stats.likes}</p>
+            <p className="text-xs text-muted-foreground">Likes Sent</p>
+          </Card>
+          <Card className="p-4 text-center">
+            <Users className="w-5 h-5 mx-auto text-primary mb-1" />
+            <p className="text-2xl font-bold text-foreground">{stats.matches}</p>
+            <p className="text-xs text-muted-foreground">Matches</p>
+          </Card>
+          <Card className="p-4 text-center">
+            <ThumbsDown className="w-5 h-5 mx-auto text-muted-foreground mb-1" />
+            <p className="text-2xl font-bold text-foreground">{stats.passes}</p>
+            <p className="text-xs text-muted-foreground">Passed</p>
+          </Card>
+        </section>
+
         {/* Profile Photo Section */}
         <section className="space-y-4">
           <h2 className="font-display text-xl font-bold">Your Photo</h2>
