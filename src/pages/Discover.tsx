@@ -104,8 +104,16 @@ const Discover = () => {
     
     const blockedByIds = (blockedByData as { blocker_id: string }[] | null)?.map(b => b.blocker_id) || [];
 
+    // Get passed profiles
+    const { data: passedData } = await supabase
+      .from("passes" as any)
+      .select("passed_profile_id")
+      .eq("user_id", userProfile.id);
+    
+    const passedIds = (passedData as unknown as { passed_profile_id: string }[] | null)?.map(p => p.passed_profile_id) || [];
+
     // Combine all IDs to exclude
-    const excludeIds = [...new Set([...likedIds, ...blockedIds, ...blockedByIds])];
+    const excludeIds = [...new Set([...likedIds, ...blockedIds, ...blockedByIds, ...passedIds])];
     
     // Fetch profiles excluding current user, already liked, and blocked
     let query = supabase
@@ -190,7 +198,20 @@ const Discover = () => {
     }
   };
 
-  const handleNope = () => {
+  const handleNope = async () => {
+    if (!userProfileId || !currentProfile) {
+      goToNext();
+      return;
+    }
+
+    // Save the pass to database
+    await supabase
+      .from("passes" as any)
+      .insert({
+        user_id: userProfileId,
+        passed_profile_id: currentProfile.id,
+      });
+
     goToNext();
   };
 
