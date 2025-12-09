@@ -27,6 +27,7 @@ const Matches = () => {
     minAge: null,
     maxAge: null,
     location: "",
+    maxDistance: null,
   });
 
   // Extract unique breeds and locations for filter options
