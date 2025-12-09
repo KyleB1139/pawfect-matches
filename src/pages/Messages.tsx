@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import Navigation from "@/components/Navigation";
 import { toast } from "@/hooks/use-toast";
-import { Dog, ArrowLeft, Send } from "lucide-react";
+import { Dog, ArrowLeft, Send, Check, CheckCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -65,7 +65,7 @@ const Messages = () => {
       fetchMessages(activeConversation.id);
       markMessagesAsRead(activeConversation.id);
       
-      // Subscribe to new messages
+      // Subscribe to new messages and read status updates
       const channel = supabase
         .channel(`messages:${activeConversation.id}`)
         .on(
@@ -86,6 +86,21 @@ const Messages = () => {
             if (newMsg.sender_id !== userProfileId) {
               markMessagesAsRead(activeConversation.id);
             }
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'messages',
+            filter: `conversation_id=eq.${activeConversation.id}`,
+          },
+          (payload) => {
+            const updatedMsg = payload.new as Message;
+            setMessages((prev) =>
+              prev.map((m) => (m.id === updatedMsg.id ? updatedMsg : m))
+            );
           }
         )
         .subscribe();
@@ -332,11 +347,20 @@ const Messages = () => {
                   }`}
                 >
                   <p className="text-sm">{msg.content}</p>
-                  <p className={`text-xs mt-1 ${
+                  <div className={`flex items-center justify-end gap-1 mt-1 ${
                     msg.sender_id === userProfileId ? "text-primary-foreground/70" : "text-muted-foreground"
                   }`}>
-                    {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </p>
+                    <span className="text-xs">
+                      {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                    {msg.sender_id === userProfileId && (
+                      msg.read_at ? (
+                        <CheckCheck className="w-4 h-4 text-primary-foreground" />
+                      ) : (
+                        <Check className="w-4 h-4 text-primary-foreground/50" />
+                      )
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
