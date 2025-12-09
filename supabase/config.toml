@@ -2,3 +2,6 @@ project_id = "savcrlthgdcsuvjubmzv"
 
 [functions.send-push-notification]
 verify_jwt = false
+
+[functions.backup-codes]
+verify_jwt = true
