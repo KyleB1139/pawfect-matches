@@ -8,6 +8,7 @@ import { Dog, MessageCircle, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import MatchFiltersComponent, { MatchFilters } from "@/components/MatchFilters";
+import MatchActions from "@/components/MatchActions";
 import type { ProfileData } from "./Discover";
 
 interface MatchWithProfile extends ProfileData {
@@ -253,6 +254,13 @@ const Matches = () => {
                 >
                   <MessageCircle className="w-5 h-5" />
                 </Button>
+
+                <MatchActions
+                  matchId={match.id}
+                  matchName={match.dog_name || match.name}
+                  userProfileId={userProfileId!}
+                  onActionComplete={fetchMatches}
+                />
               </Card>
             ))}
           </div>
