@@ -21,18 +21,39 @@ export function PushNotificationToggle() {
         });
       }
     } else {
+      // Check current permission state first
+      const currentPermission = Notification.permission;
+      if (currentPermission === 'denied') {
+        toast({
+          title: 'Permission denied',
+          description: 'Please enable notifications in your browser settings (click the lock icon in the address bar).',
+          variant: 'destructive',
+        });
+        return;
+      }
+      
       const success = await subscribe();
       if (success) {
         toast({
           title: 'Notifications enabled',
           description: 'You will now receive push notifications for new messages and matches.',
         });
-      } else if (permission === 'denied') {
-        toast({
-          title: 'Permission denied',
-          description: 'Please enable notifications in your browser settings.',
-          variant: 'destructive',
-        });
+      } else {
+        // Check if permission was denied during the subscribe attempt
+        const newPermission = Notification.permission;
+        if (newPermission === 'denied') {
+          toast({
+            title: 'Permission denied',
+            description: 'Please enable notifications in your browser settings (click the lock icon in the address bar).',
+            variant: 'destructive',
+          });
+        } else {
+          toast({
+            title: 'Something went wrong',
+            description: 'Could not enable notifications. Please try again.',
+            variant: 'destructive',
+          });
+        }
       }
     }
   };
