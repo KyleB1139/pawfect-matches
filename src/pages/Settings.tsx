@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import Navigation from "@/components/Navigation";
 import { PushNotificationToggle } from "@/components/PushNotificationToggle";
+import { TwoFactorSetup } from "@/components/TwoFactorSetup";
 import { useDistanceUnit } from "@/hooks/useDistanceUnit";
 import { Input } from "@/components/ui/input";
 import {
@@ -284,6 +285,16 @@ const Settings = () => {
                 </span>
               </div>
             </div>
+          </Card>
+        </section>
+
+        {/* Security Section */}
+        <section>
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+            Security
+          </h2>
+          <Card className="divide-y divide-border">
+            <TwoFactorSetup />
           </Card>
         </section>
 
