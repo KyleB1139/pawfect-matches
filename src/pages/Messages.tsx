@@ -12,6 +12,25 @@ import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { ProfileData } from "./Discover";
 
+const formatLastActive = (lastSeen: string | null | undefined, isOnline: boolean): string => {
+  if (isOnline) return "Online now";
+  if (!lastSeen) return "Recently";
+  
+  const lastSeenDate = new Date(lastSeen);
+  const now = new Date();
+  const diffMs = now.getTime() - lastSeenDate.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+  
+  if (diffMins < 1) return "Just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays === 1) return "Yesterday";
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return lastSeenDate.toLocaleDateString();
+};
+
 const OnlineIndicator = ({ isOnline }: { isOnline: boolean }) => (
   <span
     className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-background ${
@@ -20,13 +39,17 @@ const OnlineIndicator = ({ isOnline }: { isOnline: boolean }) => (
   />
 );
 
+interface ConversationProfile extends ProfileData {
+  last_seen?: string | null;
+}
+
 interface Conversation {
   id: string;
   participant_1_id: string;
   participant_2_id: string;
   created_at: string;
   updated_at: string;
-  other_profile: ProfileData;
+  other_profile: ConversationProfile;
   last_message?: Message;
 }
 
@@ -228,7 +251,7 @@ const Messages = () => {
 
     const { data: profiles } = await supabase
       .from("profiles")
-      .select("*")
+      .select("*, last_seen")
       .in("id", otherProfileIds);
 
     // Fetch last message for each conversation
@@ -390,8 +413,8 @@ const Messages = () => {
               <h2 className="font-semibold text-foreground">
                 {activeConversation.other_profile?.dog_name || activeConversation.other_profile?.name}
               </h2>
-              <p className="text-xs text-muted-foreground">
-                {isUserOnline(activeConversation.other_profile?.id || '') ? 'Online' : activeConversation.other_profile?.dog_breed}
+              <p className={`text-xs ${isUserOnline(activeConversation.other_profile?.id || '') ? 'text-green-600' : 'text-muted-foreground'}`}>
+                {formatLastActive(activeConversation.other_profile?.last_seen, isUserOnline(activeConversation.other_profile?.id || ''))}
               </p>
             </div>
           </div>
@@ -496,9 +519,14 @@ const Messages = () => {
                   <OnlineIndicator isOnline={isUserOnline(convo.other_profile?.id || '')} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-foreground truncate">
-                    {convo.other_profile?.dog_name || convo.other_profile?.name}
-                  </h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold text-foreground truncate">
+                      {convo.other_profile?.dog_name || convo.other_profile?.name}
+                    </h3>
+                    <span className={`text-xs shrink-0 ${isUserOnline(convo.other_profile?.id || '') ? 'text-green-600' : 'text-muted-foreground'}`}>
+                      {formatLastActive(convo.other_profile?.last_seen, isUserOnline(convo.other_profile?.id || ''))}
+                    </span>
+                  </div>
                   <p className="text-sm text-muted-foreground truncate">
                     {convo.last_message?.content || "Start a conversation!"}
                   </p>
