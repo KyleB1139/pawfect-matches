@@ -61,8 +61,9 @@ const Messages = () => {
   }, [userProfileId]);
 
   useEffect(() => {
-    if (activeConversation) {
+    if (activeConversation && userProfileId) {
       fetchMessages(activeConversation.id);
+      markMessagesAsRead(activeConversation.id);
       
       // Subscribe to new messages
       const channel = supabase
@@ -81,6 +82,10 @@ const Messages = () => {
               if (prev.some(m => m.id === newMsg.id)) return prev;
               return [...prev, newMsg];
             });
+            // Mark new incoming messages as read immediately
+            if (newMsg.sender_id !== userProfileId) {
+              markMessagesAsRead(activeConversation.id);
+            }
           }
         )
         .subscribe();
@@ -89,7 +94,19 @@ const Messages = () => {
         supabase.removeChannel(channel);
       };
     }
-  }, [activeConversation]);
+  }, [activeConversation, userProfileId]);
+
+  const markMessagesAsRead = async (conversationId: string) => {
+    if (!userProfileId) return;
+    
+    // Mark all unread messages from other users as read
+    await supabase
+      .from('messages')
+      .update({ read_at: new Date().toISOString() })
+      .eq('conversation_id', conversationId)
+      .neq('sender_id', userProfileId)
+      .is('read_at', null);
+  };
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
