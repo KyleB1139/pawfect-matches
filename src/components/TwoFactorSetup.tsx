@@ -2,9 +2,8 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
-import { Shield, ShieldCheck, ShieldOff, Loader2 } from "lucide-react";
+import { Shield, ShieldCheck, ShieldOff, Loader2, KeyRound, Copy, Check } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -43,6 +42,13 @@ export const TwoFactorSetup = () => {
   const [verifyCode, setVerifyCode] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
   const [isUnenrolling, setIsUnenrolling] = useState(false);
+  
+  // Backup codes state
+  const [backupCodes, setBackupCodes] = useState<string[]>([]);
+  const [showBackupCodes, setShowBackupCodes] = useState(false);
+  const [remainingBackupCodes, setRemainingBackupCodes] = useState<number>(0);
+  const [isGeneratingBackup, setIsGeneratingBackup] = useState(false);
+  const [copiedCodes, setCopiedCodes] = useState(false);
 
   useEffect(() => {
     fetchFactors();
@@ -54,11 +60,73 @@ export const TwoFactorSetup = () => {
       const { data, error } = await supabase.auth.mfa.listFactors();
       if (error) throw error;
       setFactors(data?.totp || []);
+      
+      // Fetch backup codes status if 2FA is enabled
+      const verifiedFactors = (data?.totp || []).filter((f) => f.status === "verified");
+      if (verifiedFactors.length > 0) {
+        fetchBackupCodesStatus();
+      }
     } catch (error) {
       console.error("Error fetching MFA factors:", error);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const fetchBackupCodesStatus = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { data, error } = await supabase.functions.invoke("backup-codes", {
+        body: { action: "status" },
+      });
+
+      if (!error && data) {
+        setRemainingBackupCodes(data.remainingCodes || 0);
+      }
+    } catch (error) {
+      console.error("Error fetching backup codes status:", error);
+    }
+  };
+
+  const generateBackupCodes = async () => {
+    setIsGeneratingBackup(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("backup-codes", {
+        body: { action: "generate" },
+      });
+
+      if (error) throw error;
+
+      setBackupCodes(data.codes);
+      setShowBackupCodes(true);
+      setRemainingBackupCodes(data.codes.length);
+      setCopiedCodes(false);
+
+      toast({
+        title: "Backup codes generated",
+        description: "Save these codes in a secure place.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error generating backup codes",
+        description: error.message || "Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingBackup(false);
+    }
+  };
+
+  const copyBackupCodes = async () => {
+    const codesText = backupCodes.join("\n");
+    await navigator.clipboard.writeText(codesText);
+    setCopiedCodes(true);
+    toast({
+      title: "Copied to clipboard",
+      description: "Backup codes have been copied.",
+    });
   };
 
   const startEnrollment = async () => {
@@ -119,6 +187,9 @@ export const TwoFactorSetup = () => {
       setEnrollmentData(null);
       setVerifyCode("");
       setIsEnrolling(false);
+      
+      // Generate backup codes after successful enrollment
+      await generateBackupCodes();
       fetchFactors();
     } catch (error: any) {
       toast({
@@ -147,6 +218,7 @@ export const TwoFactorSetup = () => {
         title: "2FA disabled",
         description: "Two-factor authentication has been removed.",
       });
+      setRemainingBackupCodes(0);
       fetchFactors();
     } catch (error: any) {
       toast({
@@ -241,6 +313,35 @@ export const TwoFactorSetup = () => {
         </div>
       </div>
 
+      {/* Backup Codes Section - Only show when 2FA is enabled */}
+      {hasVerified2FA && (
+        <div className="p-4 border-t border-border">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                <KeyRound className="w-5 h-5 text-muted-foreground" />
+              </div>
+              <div>
+                <p className="font-medium text-foreground">Backup Codes</p>
+                <p className="text-sm text-muted-foreground">
+                  {remainingBackupCodes > 0
+                    ? `${remainingBackupCodes} codes remaining`
+                    : "No backup codes generated"}
+                </p>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={generateBackupCodes}
+              disabled={isGeneratingBackup}
+            >
+              {isGeneratingBackup ? "Generating..." : remainingBackupCodes > 0 ? "Regenerate" : "Generate"}
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Enrollment Dialog */}
       <Dialog open={!!enrollmentData} onOpenChange={(open) => !open && cancelEnrollment()}>
         <DialogContent className="max-w-sm">
@@ -305,6 +406,54 @@ export const TwoFactorSetup = () => {
                 </div>
               </>
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Backup Codes Dialog */}
+      <Dialog open={showBackupCodes} onOpenChange={setShowBackupCodes}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Your Backup Codes</DialogTitle>
+            <DialogDescription>
+              Save these codes in a secure place. Each code can only be used once to disable 2FA if you lose access to your authenticator app.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-2 p-4 bg-muted rounded-lg font-mono text-sm">
+              {backupCodes.map((code, index) => (
+                <div key={index} className="text-center py-1">
+                  {code}
+                </div>
+              ))}
+            </div>
+
+            <Button
+              onClick={copyBackupCodes}
+              variant="outline"
+              className="w-full"
+            >
+              {copiedCodes ? (
+                <>
+                  <Check className="w-4 h-4 mr-2" />
+                  Copied!
+                </>
+              ) : (
+                <>
+                  <Copy className="w-4 h-4 mr-2" />
+                  Copy All Codes
+                </>
+              )}
+            </Button>
+
+            <p className="text-xs text-muted-foreground text-center">
+              These codes won't be shown again. Make sure to save them now.
+            </p>
+
+            <Button onClick={() => setShowBackupCodes(false)} className="w-full">
+              I've Saved My Codes
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
