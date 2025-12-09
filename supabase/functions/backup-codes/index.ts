@@ -190,6 +190,65 @@ Deno.serve(async (req) => {
       );
     }
 
+    if (action === "recover") {
+      // Recovery action - used during login when 2FA blocks access
+      // The user is already authenticated at this point but needs to disable 2FA
+      if (!code) {
+        return new Response(
+          JSON.stringify({ error: "Code is required" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const hashedCode = await hashCode(code.toUpperCase().replace(/\s/g, ""));
+
+      // Find unused backup code
+      const { data: backupCode, error: findError } = await adminClient
+        .from("backup_codes")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("code_hash", hashedCode)
+        .is("used_at", null)
+        .single();
+
+      if (findError || !backupCode) {
+        console.log("Invalid backup code recovery attempt for user:", user.id);
+        return new Response(
+          JSON.stringify({ valid: false, error: "Invalid or already used backup code" }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Mark code as used
+      await adminClient
+        .from("backup_codes")
+        .update({ used_at: new Date().toISOString() })
+        .eq("id", backupCode.id);
+
+      // Unenroll all MFA factors for the user
+      const { data: factorsData } = await adminClient.auth.admin.mfa.listFactors({
+        userId: user.id,
+      });
+
+      if (factorsData?.factors) {
+        for (const factor of factorsData.factors) {
+          if (factor.factor_type === "totp") {
+            await adminClient.auth.admin.mfa.deleteFactor({
+              userId: user.id,
+              id: factor.id,
+            });
+          }
+        }
+      }
+
+      console.log(`Backup code used to recover account and disable 2FA for user ${user.id}`);
+
+      return new Response(
+        JSON.stringify({ valid: true, message: "2FA has been disabled. You can now sign in normally." }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     return new Response(
       JSON.stringify({ error: "Invalid action" }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
