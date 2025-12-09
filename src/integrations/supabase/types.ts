@@ -14,6 +14,35 @@ export type Database = {
   }
   public: {
     Tables: {
+      blocks: {
+        Row: {
+          blocked_profile_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          blocked_profile_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          blocked_profile_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blocks_blocked_profile_id_fkey"
+            columns: ["blocked_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversations: {
         Row: {
           created_at: string
@@ -226,11 +255,46 @@ export type Database = {
         }
         Relationships: []
       }
+      unmatches: {
+        Row: {
+          created_at: string
+          id: string
+          unmatched_profile_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          unmatched_profile_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          unmatched_profile_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "unmatches_unmatched_profile_id_fkey"
+            columns: ["unmatched_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      get_blocked_by_ids: {
+        Args: { _user_id: string }
+        Returns: {
+          blocker_id: string
+        }[]
+      }
       get_user_matches: {
         Args: { _user_id: string }
         Returns: {
@@ -239,6 +303,10 @@ export type Database = {
         }[]
       }
       get_user_profile_id: { Args: { _user_id: string }; Returns: string }
+      is_blocked: {
+        Args: { _other_user_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_conversation_participant: {
         Args: { _conversation_id: string; _user_id: string }
         Returns: boolean

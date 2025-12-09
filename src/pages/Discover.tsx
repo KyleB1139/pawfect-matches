@@ -69,23 +69,53 @@ const Discover = () => {
     
     setIsLoading(true);
     
+    // Get user's profile ID
+    const { data: userProfile } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!userProfile) {
+      setIsLoading(false);
+      return;
+    }
+
     // Get already liked profiles to exclude them
     const { data: likedData } = await supabase
       .from("likes")
       .select("liked_profile_id")
-      .eq("user_id", (await supabase.from("profiles").select("id").eq("user_id", user.id).maybeSingle()).data?.id || "");
+      .eq("user_id", userProfile.id);
     
     const likedIds = likedData?.map(l => l.liked_profile_id) || [];
+
+    // Get blocked profiles (both directions)
+    const { data: blockedData } = await supabase
+      .from("blocks")
+      .select("blocked_profile_id")
+      .eq("user_id", userProfile.id);
     
-    // Fetch profiles excluding current user and already liked
+    const blockedIds = blockedData?.map(b => b.blocked_profile_id) || [];
+
+    // Get profiles that blocked the current user using the is_blocked function
+    // We'll filter these on the server side via the RPC function
+    const { data: blockedByData } = await supabase
+      .rpc("get_blocked_by_ids" as any, { _user_id: userProfile.id });
+    
+    const blockedByIds = (blockedByData as { blocker_id: string }[] | null)?.map(b => b.blocker_id) || [];
+
+    // Combine all IDs to exclude
+    const excludeIds = [...new Set([...likedIds, ...blockedIds, ...blockedByIds])];
+    
+    // Fetch profiles excluding current user, already liked, and blocked
     let query = supabase
       .from("profiles")
       .select("*")
       .neq("user_id", user.id)
       .not("dog_name", "is", null);  // Only show profiles with dogs
     
-    if (likedIds.length > 0) {
-      query = query.not("id", "in", `(${likedIds.join(",")})`);
+    if (excludeIds.length > 0) {
+      query = query.not("id", "in", `(${excludeIds.join(",")})`);
     }
     
     const { data, error } = await query;
