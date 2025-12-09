@@ -227,6 +227,30 @@ export type Database = {
           },
         ]
       }
+      profile_boosts: {
+        Row: {
+          created_at: string
+          ends_at: string
+          id: string
+          starts_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          ends_at: string
+          id?: string
+          starts_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          ends_at?: string
+          id?: string
+          starts_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           age: number | null
@@ -410,6 +434,7 @@ export type Database = {
         Args: { _conversation_id: string; _user_id: string }
         Returns: boolean
       }
+      is_profile_boosted: { Args: { _profile_id: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never

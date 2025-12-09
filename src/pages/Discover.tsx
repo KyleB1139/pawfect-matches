@@ -8,7 +8,7 @@ import Navigation from "@/components/Navigation";
 import MatchFiltersComponent, { MatchFilters } from "@/components/MatchFilters";
 import { useDistanceUnit } from "@/hooks/useDistanceUnit";
 import { toast } from "@/hooks/use-toast";
-import { Dog, Star } from "lucide-react";
+import { Dog, Star, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
@@ -41,6 +41,8 @@ const Discover = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [superLikesRemaining, setSuperLikesRemaining] = useState(3);
+  const [isBoostActive, setIsBoostActive] = useState(false);
+  const [boostEndsAt, setBoostEndsAt] = useState<Date | null>(null);
   const [filters, setFilters] = useState<MatchFilters>({
     breed: "",
     minAge: null,
@@ -121,8 +123,71 @@ const Discover = () => {
       fetchUserProfile();
       fetchProfiles();
       fetchSuperLikeCount();
+      fetchBoostStatus();
     }
   }, [user]);
+
+  const fetchBoostStatus = async () => {
+    if (!user) return;
+    
+    const { data: userProfile } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!userProfile) return;
+
+    const { data: activeBoost } = await supabase
+      .from("profile_boosts")
+      .select("ends_at")
+      .eq("user_id", userProfile.id)
+      .gte("ends_at", new Date().toISOString())
+      .lte("starts_at", new Date().toISOString())
+      .order("ends_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (activeBoost) {
+      setIsBoostActive(true);
+      setBoostEndsAt(new Date(activeBoost.ends_at));
+    } else {
+      setIsBoostActive(false);
+      setBoostEndsAt(null);
+    }
+  };
+
+  const handleActivateBoost = async () => {
+    if (!userProfileId) return;
+
+    const now = new Date();
+    const endsAt = new Date(now.getTime() + 30 * 60 * 1000); // 30 minutes
+
+    const { error } = await supabase
+      .from("profile_boosts")
+      .insert({
+        user_id: userProfileId,
+        starts_at: now.toISOString(),
+        ends_at: endsAt.toISOString(),
+      });
+
+    if (error) {
+      console.error("Error activating boost:", error);
+      toast({
+        title: "Error",
+        description: "Failed to activate boost. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsBoostActive(true);
+    setBoostEndsAt(endsAt);
+    toast({
+      title: "Boost activated! ⚡",
+      description: "Your profile will appear first for the next 30 minutes!",
+    });
+  };
 
   const fetchSuperLikeCount = async () => {
     if (!user) return;
@@ -228,7 +293,23 @@ const Discover = () => {
         variant: "destructive",
       });
     } else {
-      setProfiles(data || []);
+      // Check which profiles are boosted and sort them first
+      const profilesWithBoost = await Promise.all(
+        (data || []).map(async (profile) => {
+          const { data: isBoosted } = await supabase
+            .rpc("is_profile_boosted", { _profile_id: profile.id });
+          return { ...profile, isBoosted: !!isBoosted };
+        })
+      );
+      
+      // Sort boosted profiles first
+      profilesWithBoost.sort((a, b) => {
+        if (a.isBoosted && !b.isBoosted) return -1;
+        if (!a.isBoosted && b.isBoosted) return 1;
+        return 0;
+      });
+      
+      setProfiles(profilesWithBoost);
     }
     
     setIsLoading(false);
@@ -524,8 +605,24 @@ const Discover = () => {
       <main className="max-w-md mx-auto px-4 py-6">
         {currentProfile ? (
           <>
-            {/* Super Like Counter */}
-            <div className="flex justify-center mb-4">
+            {/* Boost & Super Like Status */}
+            <div className="flex justify-center gap-3 mb-4 flex-wrap">
+              {isBoostActive ? (
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full border border-primary/20">
+                  <Zap className="w-4 h-4 text-primary fill-primary animate-pulse" />
+                  <span className="text-sm font-medium text-primary">
+                    Boost active until {boostEndsAt?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+              ) : (
+                <button
+                  onClick={handleActivateBoost}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 hover:bg-primary/20 rounded-full transition-colors border border-primary/20"
+                >
+                  <Zap className="w-4 h-4 text-primary" />
+                  <span className="text-sm font-medium text-primary">Boost Profile</span>
+                </button>
+              )}
               <div className="inline-flex items-center gap-2 px-4 py-2 bg-accent/10 rounded-full">
                 <Star className="w-4 h-4 text-accent fill-accent" />
                 <span className="text-sm font-medium">
