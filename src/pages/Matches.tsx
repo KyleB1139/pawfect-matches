@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,6 +7,7 @@ import { toast } from "@/hooks/use-toast";
 import { Dog, MessageCircle, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import MatchFiltersComponent, { MatchFilters } from "@/components/MatchFilters";
 import type { ProfileData } from "./Discover";
 
 interface MatchWithProfile extends ProfileData {
@@ -20,6 +21,38 @@ const Matches = () => {
   const [matches, setMatches] = useState<MatchWithProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [userProfileId, setUserProfileId] = useState<string | null>(null);
+  const [filters, setFilters] = useState<MatchFilters>({
+    breed: "",
+    minAge: null,
+    maxAge: null,
+    location: "",
+  });
+
+  // Extract unique breeds and locations for filter options
+  const availableBreeds = useMemo(() => {
+    const breeds = matches
+      .map((m) => m.dog_breed)
+      .filter((b): b is string => !!b);
+    return [...new Set(breeds)].sort();
+  }, [matches]);
+
+  const availableLocations = useMemo(() => {
+    const locations = matches
+      .map((m) => m.location)
+      .filter((l): l is string => !!l);
+    return [...new Set(locations)].sort();
+  }, [matches]);
+
+  // Filter matches based on current filters
+  const filteredMatches = useMemo(() => {
+    return matches.filter((match) => {
+      if (filters.breed && match.dog_breed !== filters.breed) return false;
+      if (filters.minAge !== null && (match.dog_age ?? 0) < filters.minAge) return false;
+      if (filters.maxAge !== null && (match.dog_age ?? 0) > filters.maxAge) return false;
+      if (filters.location && match.location !== filters.location) return false;
+      return true;
+    });
+  }, [matches, filters]);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -168,16 +201,24 @@ const Matches = () => {
     <div className="min-h-screen bg-background pb-24">
       {/* Header */}
       <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border">
-        <div className="max-w-md mx-auto px-4 py-4 flex items-center justify-center">
+        <div className="max-w-md mx-auto px-4 py-4 flex items-center justify-between">
           <h1 className="font-display text-2xl font-bold text-gradient">Matches</h1>
+          {matches.length > 0 && (
+            <MatchFiltersComponent
+              filters={filters}
+              onFiltersChange={setFilters}
+              availableBreeds={availableBreeds}
+              availableLocations={availableLocations}
+            />
+          )}
         </div>
       </header>
 
       {/* Main Content */}
       <main className="max-w-md mx-auto px-4 py-6">
-        {matches.length > 0 ? (
+        {filteredMatches.length > 0 ? (
           <div className="space-y-4">
-            {matches.map((match) => (
+            {filteredMatches.map((match) => (
               <Card 
                 key={match.id} 
                 className="p-4 flex items-center gap-4 hover:bg-accent/50 transition-colors"
