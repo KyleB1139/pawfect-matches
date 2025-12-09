@@ -32,18 +32,25 @@ export const useNotificationCounts = () => {
 
       setUnreadMessages(messageCount || 0);
 
-      // Get matches from last 7 days as "new"
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      // Get last viewed time for matches
+      const { data: matchView } = await supabase
+        .from('match_views')
+        .select('last_viewed_at')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      const lastViewed = matchView?.last_viewed_at 
+        ? new Date(matchView.last_viewed_at) 
+        : new Date(0); // If never viewed, show all as new
 
       const { data: matches } = await supabase
-        .rpc('get_user_matches', { _user_id: user.id });
+        .rpc('get_user_matches', { _user_id: profileId });
 
-      const recentMatches = matches?.filter(
-        (m: { matched_at: string }) => new Date(m.matched_at) > sevenDaysAgo
+      const unseenMatches = matches?.filter(
+        (m: { matched_at: string }) => new Date(m.matched_at) > lastViewed
       );
 
-      setNewMatches(recentMatches?.length || 0);
+      setNewMatches(unseenMatches?.length || 0);
     };
 
     fetchCounts();

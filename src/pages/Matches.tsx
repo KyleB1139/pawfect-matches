@@ -30,8 +30,21 @@ const Matches = () => {
   useEffect(() => {
     if (user) {
       fetchMatches();
+      markMatchesAsViewed();
     }
   }, [user]);
+
+  const markMatchesAsViewed = async () => {
+    if (!user) return;
+    
+    // Upsert the match_views record
+    await supabase
+      .from('match_views')
+      .upsert(
+        { user_id: user.id, last_viewed_at: new Date().toISOString() },
+        { onConflict: 'user_id' }
+      );
+  };
 
   const fetchMatches = async () => {
     if (!user) return;
