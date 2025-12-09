@@ -1,4 +1,4 @@
-import { Dog, Heart, MessageCircle, User } from "lucide-react";
+import { Dog, Heart, MessageCircle, User, Settings } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { cn } from "@/lib/utils";
 import { useNotificationCounts } from "@/hooks/useNotificationCounts";
@@ -20,6 +20,7 @@ const Navigation = () => {
     { icon: Heart, label: "Matches", path: "/matches", badge: newMatches },
     { icon: MessageCircle, label: "Messages", path: "/messages", badge: unreadMessages },
     { icon: User, label: "Profile", path: "/profile", badge: 0 },
+    { icon: Settings, label: "Settings", path: "/settings", badge: 0 },
   ];
 
   return (

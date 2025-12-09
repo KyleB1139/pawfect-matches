@@ -9,8 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import Navigation from "@/components/Navigation";
-import { PushNotificationToggle } from "@/components/PushNotificationToggle";
-import { Dog, Camera, Save, LogOut, X } from "lucide-react";
+import { Dog, Camera, Save, Settings, X } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 const dogBreeds = [
@@ -22,7 +21,7 @@ const dogBreeds = [
 const friendlyOptions = ["Small dogs", "Large dogs", "Cats", "Children", "Everyone"];
 
 const Profile = () => {
-  const { user, signOut, loading } = useAuth();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
   
   const [isSaving, setIsSaving] = useState(false);
@@ -182,8 +181,7 @@ const Profile = () => {
   };
 
   const handleSignOut = async () => {
-    await signOut();
-    navigate("/");
+    navigate("/settings");
   };
 
   if (loading) {
@@ -200,13 +198,9 @@ const Profile = () => {
       <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="max-w-md mx-auto px-4 py-4 flex items-center justify-between">
           <h1 className="font-display text-2xl font-bold text-gradient">My Profile</h1>
-          <div className="flex items-center gap-2">
-            <PushNotificationToggle />
-            <Button variant="ghost" size="sm" onClick={handleSignOut}>
-              <LogOut className="w-4 h-4 mr-2" />
-              Sign Out
-            </Button>
-          </div>
+          <Button variant="ghost" size="icon" onClick={() => navigate("/settings")}>
+            <Settings className="w-5 h-5" />
+          </Button>
         </div>
       </header>
 
