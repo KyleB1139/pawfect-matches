@@ -4,12 +4,21 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import Navigation from "@/components/Navigation";
 import { toast } from "@/hooks/use-toast";
+import { usePresence } from "@/hooks/usePresence";
 import { Dog, ArrowLeft, Send, Check, CheckCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { ProfileData } from "./Discover";
+
+const OnlineIndicator = ({ isOnline }: { isOnline: boolean }) => (
+  <span
+    className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-background ${
+      isOnline ? "bg-green-500" : "bg-muted-foreground/40"
+    }`}
+  />
+);
 
 interface Conversation {
   id: string;
@@ -44,6 +53,8 @@ const Messages = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const typingChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+
+  const { isUserOnline } = usePresence(user?.id || null, userProfileId);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -367,17 +378,20 @@ const Messages = () => {
             >
               <ArrowLeft className="w-5 h-5" />
             </Button>
-            <img
-              src={activeConversation.other_profile?.dog_photo_url || activeConversation.other_profile?.avatar_url || "/placeholder.svg"}
-              alt={activeConversation.other_profile?.dog_name || ""}
-              className="w-10 h-10 rounded-full object-cover border border-border"
-            />
+            <div className="relative">
+              <img
+                src={activeConversation.other_profile?.dog_photo_url || activeConversation.other_profile?.avatar_url || "/placeholder.svg"}
+                alt={activeConversation.other_profile?.dog_name || ""}
+                className="w-10 h-10 rounded-full object-cover border border-border"
+              />
+              <OnlineIndicator isOnline={isUserOnline(activeConversation.other_profile?.id || '')} />
+            </div>
             <div className="flex-1">
               <h2 className="font-semibold text-foreground">
                 {activeConversation.other_profile?.dog_name || activeConversation.other_profile?.name}
               </h2>
               <p className="text-xs text-muted-foreground">
-                {activeConversation.other_profile?.dog_breed}
+                {isUserOnline(activeConversation.other_profile?.id || '') ? 'Online' : activeConversation.other_profile?.dog_breed}
               </p>
             </div>
           </div>
@@ -473,11 +487,14 @@ const Messages = () => {
                 className="p-4 flex items-center gap-4 cursor-pointer hover:bg-accent/50 transition-colors"
                 onClick={() => setActiveConversation(convo)}
               >
-                <img
-                  src={convo.other_profile?.dog_photo_url || convo.other_profile?.avatar_url || "/placeholder.svg"}
-                  alt={convo.other_profile?.dog_name || ""}
-                  className="w-14 h-14 rounded-full object-cover border-2 border-border"
-                />
+                <div className="relative">
+                  <img
+                    src={convo.other_profile?.dog_photo_url || convo.other_profile?.avatar_url || "/placeholder.svg"}
+                    alt={convo.other_profile?.dog_name || ""}
+                    className="w-14 h-14 rounded-full object-cover border-2 border-border"
+                  />
+                  <OnlineIndicator isOnline={isUserOnline(convo.other_profile?.id || '')} />
+                </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-foreground truncate">
                     {convo.other_profile?.dog_name || convo.other_profile?.name}
