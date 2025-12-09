@@ -216,7 +216,9 @@ export type Database = {
           dog_name: string | null
           dog_photo_url: string | null
           id: string
+          latitude: number | null
           location: string | null
+          longitude: number | null
           name: string
           updated_at: string
           user_id: string
@@ -233,7 +235,9 @@ export type Database = {
           dog_name?: string | null
           dog_photo_url?: string | null
           id?: string
+          latitude?: number | null
           location?: string | null
+          longitude?: number | null
           name: string
           updated_at?: string
           user_id: string
@@ -250,7 +254,9 @@ export type Database = {
           dog_name?: string | null
           dog_photo_url?: string | null
           id?: string
+          latitude?: number | null
           location?: string | null
+          longitude?: number | null
           name?: string
           updated_at?: string
           user_id?: string
@@ -318,6 +324,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_distance_km: {
+        Args: { lat1: number; lat2: number; lon1: number; lon2: number }
+        Returns: number
+      }
       get_blocked_by_ids: {
         Args: { _user_id: string }
         Returns: {

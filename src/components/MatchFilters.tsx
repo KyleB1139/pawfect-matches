@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
 import {
   Select,
   SelectContent,
@@ -16,13 +17,14 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Filter, X } from "lucide-react";
+import { Filter, X, MapPin } from "lucide-react";
 
 export interface MatchFilters {
   breed: string;
   minAge: number | null;
   maxAge: number | null;
   location: string;
+  maxDistance: number | null; // in km
 }
 
 interface MatchFiltersProps {
@@ -30,6 +32,8 @@ interface MatchFiltersProps {
   onFiltersChange: (filters: MatchFilters) => void;
   availableBreeds: string[];
   availableLocations: string[];
+  userHasLocation?: boolean;
+  onRequestLocation?: () => void;
 }
 
 const MatchFiltersComponent = ({
@@ -37,6 +41,8 @@ const MatchFiltersComponent = ({
   onFiltersChange,
   availableBreeds,
   availableLocations,
+  userHasLocation = false,
+  onRequestLocation,
 }: MatchFiltersProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -44,7 +50,8 @@ const MatchFiltersComponent = ({
     filters.breed ||
     filters.minAge !== null ||
     filters.maxAge !== null ||
-    filters.location;
+    filters.location ||
+    filters.maxDistance !== null;
 
   const clearFilters = () => {
     onFiltersChange({
@@ -52,6 +59,7 @@ const MatchFiltersComponent = ({
       minAge: null,
       maxAge: null,
       location: "",
+      maxDistance: null,
     });
   };
 
@@ -83,6 +91,50 @@ const MatchFiltersComponent = ({
         </SheetHeader>
 
         <div className="space-y-6 py-6">
+          {/* Distance Filter */}
+          <div className="space-y-3">
+            <Label className="flex items-center gap-2">
+              <MapPin className="w-4 h-4" />
+              Maximum Distance
+            </Label>
+            {userHasLocation ? (
+              <>
+                <Slider
+                  value={[filters.maxDistance ?? 100]}
+                  onValueChange={([value]) =>
+                    onFiltersChange({ ...filters, maxDistance: value })
+                  }
+                  min={1}
+                  max={100}
+                  step={1}
+                  className="w-full"
+                />
+                <div className="flex justify-between text-sm text-muted-foreground">
+                  <span>1 km</span>
+                  <span className="font-medium text-foreground">
+                    {filters.maxDistance ?? 100} km
+                  </span>
+                  <span>100 km</span>
+                </div>
+              </>
+            ) : (
+              <div className="p-4 rounded-lg bg-muted/50 text-center space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  Enable location to filter by distance
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onRequestLocation}
+                  className="gap-2"
+                >
+                  <MapPin className="w-4 h-4" />
+                  Enable Location
+                </Button>
+              </div>
+            )}
+          </div>
+
           {/* Dog Breed Filter */}
           <div className="space-y-2">
             <Label>Dog Breed</Label>
