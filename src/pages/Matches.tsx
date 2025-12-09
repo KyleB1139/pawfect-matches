@@ -2,9 +2,10 @@ import { useState, useEffect, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { usePresence } from "@/hooks/usePresence";
 import Navigation from "@/components/Navigation";
 import { toast } from "@/hooks/use-toast";
-import { Dog, MessageCircle, Heart } from "lucide-react";
+import { Dog, MessageCircle, Heart, Circle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import MatchFiltersComponent, { MatchFilters } from "@/components/MatchFilters";
@@ -13,7 +14,27 @@ import type { ProfileData } from "./Discover";
 
 interface MatchWithProfile extends ProfileData {
   matched_at: string;
+  last_seen?: string | null;
 }
+
+const formatLastActive = (lastSeen: string | null | undefined, isOnline: boolean): string => {
+  if (isOnline) return "Online now";
+  if (!lastSeen) return "Recently";
+  
+  const lastSeenDate = new Date(lastSeen);
+  const now = new Date();
+  const diffMs = now.getTime() - lastSeenDate.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+  
+  if (diffMins < 1) return "Just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays === 1) return "Yesterday";
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return lastSeenDate.toLocaleDateString();
+};
 
 const Matches = () => {
   const { user, loading } = useAuth();
@@ -29,6 +50,9 @@ const Matches = () => {
     location: "",
     maxDistance: null,
   });
+
+  // Track presence for online status
+  const { isUserOnline } = usePresence(user?.id ?? null, userProfileId);
 
   // Extract unique breeds and locations for filter options
   const availableBreeds = useMemo(() => {
@@ -127,7 +151,7 @@ const Matches = () => {
     
     const { data: profiles, error: profilesError } = await supabase
       .from("profiles")
-      .select("*")
+      .select("*, last_seen")
       .in("id", matchedUserIds);
     
     if (profilesError) {
@@ -231,13 +255,28 @@ const Matches = () => {
                     alt={match.dog_name || match.name}
                     className="w-16 h-16 rounded-full object-cover border-2 border-primary"
                   />
-                  <Heart className="absolute -bottom-1 -right-1 w-5 h-5 text-primary fill-primary" />
+                  <Circle 
+                    className={`absolute -bottom-1 -right-1 w-4 h-4 ${
+                      isUserOnline(match.id) 
+                        ? "text-green-500 fill-green-500" 
+                        : "text-muted-foreground fill-muted-foreground/50"
+                    }`} 
+                  />
                 </div>
                 
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-foreground truncate">
-                    {match.dog_name || match.name}
-                  </h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold text-foreground truncate">
+                      {match.dog_name || match.name}
+                    </h3>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${
+                      isUserOnline(match.id)
+                        ? "bg-green-500/10 text-green-600"
+                        : "bg-muted text-muted-foreground"
+                    }`}>
+                      {formatLastActive(match.last_seen, isUserOnline(match.id))}
+                    </span>
+                  </div>
                   <p className="text-sm text-muted-foreground truncate">
                     {match.dog_breed && `${match.dog_breed} • `}
                     {match.location || "Nearby"}
