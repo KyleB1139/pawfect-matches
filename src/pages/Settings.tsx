@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import Navigation from "@/components/Navigation";
 import { PushNotificationToggle } from "@/components/PushNotificationToggle";
+import { useDistanceUnit } from "@/hooks/useDistanceUnit";
 import {
   Dog,
   ArrowLeft,
@@ -20,6 +21,7 @@ import {
   Sun,
   User,
   ChevronRight,
+  Ruler,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -37,6 +39,7 @@ import {
 const Settings = () => {
   const { user, signOut, loading } = useAuth();
   const navigate = useNavigate();
+  const { unit, setUnit } = useDistanceUnit();
   const [isDarkMode, setIsDarkMode] = useState(
     document.documentElement.classList.contains("dark")
   );
@@ -192,6 +195,32 @@ const Settings = () => {
                 </div>
               </div>
               <Switch checked={isDarkMode} onCheckedChange={toggleDarkMode} />
+            </div>
+
+            <div className="flex items-center justify-between p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Ruler className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-foreground">Distance Unit</p>
+                  <p className="text-sm text-muted-foreground">
+                    {unit === "km" ? "Using kilometers" : "Using miles"}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={`text-sm ${unit === "km" ? "text-primary font-medium" : "text-muted-foreground"}`}>
+                  km
+                </span>
+                <Switch 
+                  checked={unit === "miles"} 
+                  onCheckedChange={(checked) => setUnit(checked ? "miles" : "km")} 
+                />
+                <span className={`text-sm ${unit === "miles" ? "text-primary font-medium" : "text-muted-foreground"}`}>
+                  mi
+                </span>
+              </div>
             </div>
           </Card>
         </section>

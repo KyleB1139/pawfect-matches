@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Heart, X, Star, MapPin, Dog } from "lucide-react";
+import { Heart, X, Star, MapPin, Dog, Navigation } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ProfileData } from "@/pages/Discover";
@@ -10,9 +10,11 @@ interface ProfileCardProps {
   onLike: () => void;
   onNope: () => void;
   onSuperLike: () => void;
+  distance?: number | null; // distance in km
+  distanceLabel?: string; // formatted distance string
 }
 
-const ProfileCard = ({ profile, onLike, onNope, onSuperLike }: ProfileCardProps) => {
+const ProfileCard = ({ profile, onLike, onNope, onSuperLike, distance, distanceLabel }: ProfileCardProps) => {
   const [swipeDirection, setSwipeDirection] = useState<"left" | "right" | null>(null);
   const [showDetails, setShowDetails] = useState(false);
 
@@ -84,13 +86,21 @@ const ProfileCard = ({ profile, onLike, onNope, onSuperLike }: ProfileCardProps)
             {profile.name}{profile.age ? `, ${profile.age}` : ""}
           </h2>
 
-          {/* Location */}
-          {profile.location && (
-            <div className="flex items-center gap-1 text-primary-foreground/80 mb-3">
-              <MapPin className="w-4 h-4" />
-              <span className="text-sm">{profile.location}</span>
-            </div>
-          )}
+          {/* Location & Distance */}
+          <div className="flex items-center gap-3 text-primary-foreground/80 mb-3">
+            {profile.location && (
+              <div className="flex items-center gap-1">
+                <MapPin className="w-4 h-4" />
+                <span className="text-sm">{profile.location}</span>
+              </div>
+            )}
+            {distanceLabel && (
+              <div className="flex items-center gap-1">
+                <Navigation className="w-4 h-4" />
+                <span className="text-sm font-medium">{distanceLabel} away</span>
+              </div>
+            )}
+          </div>
 
           {/* Bio (expandable) */}
           {profile.bio && (
