@@ -10,11 +10,12 @@ interface ProfileCardProps {
   onLike: () => void;
   onNope: () => void;
   onSuperLike: () => void;
-  distance?: number | null; // distance in km
-  distanceLabel?: string; // formatted distance string
+  superLikesRemaining?: number;
+  distance?: number | null;
+  distanceLabel?: string;
 }
 
-const ProfileCard = ({ profile, onLike, onNope, onSuperLike, distance, distanceLabel }: ProfileCardProps) => {
+const ProfileCard = ({ profile, onLike, onNope, onSuperLike, superLikesRemaining = 0, distance, distanceLabel }: ProfileCardProps) => {
   const [swipeDirection, setSwipeDirection] = useState<"left" | "right" | null>(null);
   const [showDetails, setShowDetails] = useState(false);
 
@@ -149,9 +150,16 @@ const ProfileCard = ({ profile, onLike, onNope, onSuperLike, distance, distanceL
           variant="superlike"
           size="icon"
           onClick={onSuperLike}
-          className="rounded-full"
+          className="rounded-full relative"
+          disabled={superLikesRemaining <= 0}
+          title={superLikesRemaining <= 0 ? "No Super Likes left today" : `${superLikesRemaining} Super Likes remaining`}
         >
           <Star className="w-6 h-6" />
+          {superLikesRemaining <= 0 && (
+            <div className="absolute inset-0 bg-muted/50 rounded-full flex items-center justify-center">
+              <span className="text-xs font-bold text-muted-foreground">0</span>
+            </div>
+          )}
         </Button>
 
         <Button

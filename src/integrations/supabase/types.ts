@@ -317,6 +317,35 @@ export type Database = {
         }
         Relationships: []
       }
+      super_likes: {
+        Row: {
+          created_at: string
+          id: string
+          liked_profile_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          liked_profile_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          liked_profile_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "super_likes_liked_profile_id_fkey"
+            columns: ["liked_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       unmatches: {
         Row: {
           created_at: string
@@ -360,6 +389,10 @@ export type Database = {
         Returns: {
           blocker_id: string
         }[]
+      }
+      get_daily_super_like_count: {
+        Args: { _user_profile_id: string }
+        Returns: number
       }
       get_user_matches: {
         Args: { _user_id: string }
