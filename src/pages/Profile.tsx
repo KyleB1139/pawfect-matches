@@ -10,7 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import Navigation from "@/components/Navigation";
-import { Dog, Camera, Save, Settings, X, Heart, ThumbsDown, Users } from "lucide-react";
+import { Dog, Camera, Save, Settings, X, Heart, ThumbsDown, Users, MapPin, CheckCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 const dogBreeds = [
@@ -26,6 +26,8 @@ const Profile = () => {
   const navigate = useNavigate();
   
   const [isSaving, setIsSaving] = useState(false);
+  const [isUpdatingLocation, setIsUpdatingLocation] = useState(false);
+  const [hasLocation, setHasLocation] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [dogPhotoFile, setDogPhotoFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -114,7 +116,61 @@ const Profile = () => {
         dog_friendly_with: data.dog_friendly_with || [],
         dog_photo_url: data.dog_photo_url || "",
       });
+      
+      // Check if user has location coordinates
+      setHasLocation(!!(data.latitude && data.longitude));
     }
+  };
+
+  const updateLocation = async () => {
+    if (!user) return;
+    
+    if (!navigator.geolocation) {
+      toast({
+        title: "Geolocation not supported",
+        description: "Your browser doesn't support location services.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsUpdatingLocation(true);
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+
+        const { error } = await supabase
+          .from("profiles")
+          .update({ latitude, longitude })
+          .eq("user_id", user.id);
+
+        if (error) {
+          toast({
+            title: "Error updating location",
+            description: "Please try again later.",
+            variant: "destructive",
+          });
+        } else {
+          setHasLocation(true);
+          toast({
+            title: "Location updated!",
+            description: "Your GPS coordinates have been saved.",
+          });
+        }
+        
+        setIsUpdatingLocation(false);
+      },
+      (error) => {
+        console.error("Geolocation error:", error);
+        toast({
+          title: "Location access denied",
+          description: "Please enable location in your browser settings.",
+          variant: "destructive",
+        });
+        setIsUpdatingLocation(false);
+      }
+    );
   };
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -329,6 +385,42 @@ const Profile = () => {
                   placeholder="City"
                 />
               </div>
+            </div>
+            
+            {/* GPS Location */}
+            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <MapPin className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-foreground text-sm">GPS Location</p>
+                  <p className="text-xs text-muted-foreground">
+                    {hasLocation ? "Location saved for distance filtering" : "Enable for distance-based matching"}
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant={hasLocation ? "outline" : "default"}
+                size="sm"
+                onClick={updateLocation}
+                disabled={isUpdatingLocation}
+                className="gap-2"
+              >
+                {isUpdatingLocation ? (
+                  <Dog className="w-4 h-4 animate-spin" />
+                ) : hasLocation ? (
+                  <>
+                    <CheckCircle className="w-4 h-4" />
+                    Update
+                  </>
+                ) : (
+                  <>
+                    <MapPin className="w-4 h-4" />
+                    Enable
+                  </>
+                )}
+              </Button>
             </div>
             <div>
               <Label htmlFor="bio">Bio</Label>
