@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface PresenceState {
@@ -13,6 +13,22 @@ interface PresenceState {
 export const usePresence = (userId: string | null, profileId: string | null) => {
   const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const lastSeenUpdateRef = useRef<number>(0);
+
+  // Update last_seen in the database
+  const updateLastSeen = useCallback(async () => {
+    if (!userId) return;
+    
+    // Throttle updates to once per minute
+    const now = Date.now();
+    if (now - lastSeenUpdateRef.current < 60000) return;
+    lastSeenUpdateRef.current = now;
+
+    await supabase
+      .from('profiles')
+      .update({ last_seen: new Date().toISOString() })
+      .eq('user_id', userId);
+  }, [userId]);
 
   useEffect(() => {
     if (!userId || !profileId) return;
@@ -56,16 +72,33 @@ export const usePresence = (userId: string | null, profileId: string | null) => 
             profile_id: profileId,
             online_at: new Date().toISOString(),
           });
+          // Update last_seen when user comes online
+          updateLastSeen();
         }
       });
 
     channelRef.current = channel;
 
+    // Update last_seen periodically while user is active
+    const interval = setInterval(updateLastSeen, 60000);
+
+    // Update last_seen on page visibility change
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        updateLastSeen();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     return () => {
+      // Update last_seen when leaving
+      updateLastSeen();
       channel.unsubscribe();
       channelRef.current = null;
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [userId, profileId]);
+  }, [userId, profileId, updateLastSeen]);
 
   const isUserOnline = (profileId: string) => onlineUsers.has(profileId);
 

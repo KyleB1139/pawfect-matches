@@ -216,6 +216,7 @@ export type Database = {
           dog_name: string | null
           dog_photo_url: string | null
           id: string
+          last_seen: string | null
           latitude: number | null
           location: string | null
           longitude: number | null
@@ -235,6 +236,7 @@ export type Database = {
           dog_name?: string | null
           dog_photo_url?: string | null
           id?: string
+          last_seen?: string | null
           latitude?: number | null
           location?: string | null
           longitude?: number | null
@@ -254,6 +256,7 @@ export type Database = {
           dog_name?: string | null
           dog_photo_url?: string | null
           id?: string
+          last_seen?: string | null
           latitude?: number | null
           location?: string | null
           longitude?: number | null
