@@ -229,7 +229,7 @@ const Discover = () => {
     // Get user's profile ID and preferences
     const { data: userProfile } = await supabase
       .from("profiles")
-      .select("id, interested_in")
+      .select("id, interested_in, min_age_preference, max_age_preference")
       .eq("user_id", user.id)
       .maybeSingle();
 
@@ -239,6 +239,8 @@ const Discover = () => {
     }
 
     const interestedIn = userProfile.interested_in || [];
+    const minAge = userProfile.min_age_preference;
+    const maxAge = userProfile.max_age_preference;
 
     // Get already liked profiles to exclude them
     const { data: likedData } = await supabase
@@ -288,6 +290,14 @@ const Discover = () => {
     // Filter by interested_in preferences if set
     if (interestedIn.length > 0) {
       query = query.in("gender", interestedIn);
+    }
+
+    // Filter by age preferences if set
+    if (minAge) {
+      query = query.gte("age", minAge);
+    }
+    if (maxAge) {
+      query = query.lte("age", maxAge);
     }
     
     const { data, error } = await query;

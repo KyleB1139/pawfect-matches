@@ -48,6 +48,8 @@ const Profile = () => {
     dog_photo_url: "",
     gender: "" as string,
     interested_in: [] as string[],
+    min_age_preference: "" as string,
+    max_age_preference: "" as string,
   });
 
   useEffect(() => {
@@ -119,6 +121,8 @@ const Profile = () => {
         dog_photo_url: data.dog_photo_url || "",
         gender: data.gender || "",
         interested_in: data.interested_in || [],
+        min_age_preference: data.min_age_preference?.toString() || "",
+        max_age_preference: data.max_age_preference?.toString() || "",
       });
       
       // Check if user has location coordinates
@@ -256,6 +260,8 @@ const Profile = () => {
           dog_photo_url: dogPhotoUrl,
           gender: profile.gender || null,
           interested_in: profile.interested_in,
+          min_age_preference: profile.min_age_preference ? parseInt(profile.min_age_preference) : null,
+          max_age_preference: profile.max_age_preference ? parseInt(profile.max_age_preference) : null,
         })
         .eq("user_id", user.id);
       
@@ -481,6 +487,32 @@ const Profile = () => {
                 ))}
               </div>
               <p className="text-xs text-muted-foreground mt-1">Select all that apply</p>
+            </div>
+
+            {/* Age Range Preference */}
+            <div>
+              <Label>Age range preference</Label>
+              <div className="grid grid-cols-2 gap-4 mt-2">
+                <div>
+                  <Input
+                    type="number"
+                    value={profile.min_age_preference}
+                    onChange={(e) => setProfile(p => ({ ...p, min_age_preference: e.target.value }))}
+                    placeholder="Min age"
+                    min={18}
+                  />
+                </div>
+                <div>
+                  <Input
+                    type="number"
+                    value={profile.max_age_preference}
+                    onChange={(e) => setProfile(p => ({ ...p, max_age_preference: e.target.value }))}
+                    placeholder="Max age"
+                    min={18}
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">Leave empty to see all ages</p>
             </div>
           </div>
         </section>
