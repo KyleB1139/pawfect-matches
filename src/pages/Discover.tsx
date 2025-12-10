@@ -226,10 +226,10 @@ const Discover = () => {
     
     setIsLoading(true);
     
-    // Get user's profile ID
+    // Get user's profile ID and preferences
     const { data: userProfile } = await supabase
       .from("profiles")
-      .select("id")
+      .select("id, interested_in")
       .eq("user_id", user.id)
       .maybeSingle();
 
@@ -237,6 +237,8 @@ const Discover = () => {
       setIsLoading(false);
       return;
     }
+
+    const interestedIn = userProfile.interested_in || [];
 
     // Get already liked profiles to exclude them
     const { data: likedData } = await supabase
@@ -281,6 +283,11 @@ const Discover = () => {
     
     if (excludeIds.length > 0) {
       query = query.not("id", "in", `(${excludeIds.join(",")})`);
+    }
+
+    // Filter by interested_in preferences if set
+    if (interestedIn.length > 0) {
+      query = query.in("gender", interestedIn);
     }
     
     const { data, error } = await query;
