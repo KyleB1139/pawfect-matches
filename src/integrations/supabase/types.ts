@@ -270,6 +270,8 @@ export type Database = {
           latitude: number | null
           location: string | null
           longitude: number | null
+          max_age_preference: number | null
+          min_age_preference: number | null
           name: string
           updated_at: string
           user_id: string
@@ -292,6 +294,8 @@ export type Database = {
           latitude?: number | null
           location?: string | null
           longitude?: number | null
+          max_age_preference?: number | null
+          min_age_preference?: number | null
           name: string
           updated_at?: string
           user_id: string
@@ -314,6 +318,8 @@ export type Database = {
           latitude?: number | null
           location?: string | null
           longitude?: number | null
+          max_age_preference?: number | null
+          min_age_preference?: number | null
           name?: string
           updated_at?: string
           user_id?: string
