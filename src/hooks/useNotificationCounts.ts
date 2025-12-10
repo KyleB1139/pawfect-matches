@@ -6,11 +6,13 @@ export const useNotificationCounts = () => {
   const { user } = useAuth();
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [newMatches, setNewMatches] = useState(0);
+  const [newLikes, setNewLikes] = useState(0);
 
   useEffect(() => {
     if (!user) {
       setUnreadMessages(0);
       setNewMatches(0);
+      setNewLikes(0);
       return;
     }
 
@@ -51,6 +53,19 @@ export const useNotificationCounts = () => {
       );
 
       setNewMatches(unseenMatches?.length || 0);
+
+      // Count likes and super likes on user's profile
+      const { count: likesCount } = await supabase
+        .from('likes')
+        .select('*', { count: 'exact', head: true })
+        .eq('liked_profile_id', profileId);
+
+      const { count: superLikesCount } = await supabase
+        .from('super_likes')
+        .select('*', { count: 'exact', head: true })
+        .eq('liked_profile_id', profileId);
+
+      setNewLikes((likesCount || 0) + (superLikesCount || 0));
     };
 
     fetchCounts();
@@ -78,6 +93,11 @@ export const useNotificationCounts = () => {
         { event: 'INSERT', schema: 'public', table: 'likes' },
         () => fetchCounts()
       )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'super_likes' },
+        () => fetchCounts()
+      )
       .subscribe();
 
     return () => {
@@ -86,5 +106,5 @@ export const useNotificationCounts = () => {
     };
   }, [user]);
 
-  return { unreadMessages, newMatches };
+  return { unreadMessages, newMatches, newLikes };
 };
