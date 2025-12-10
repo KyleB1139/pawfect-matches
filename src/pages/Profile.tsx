@@ -46,6 +46,8 @@ const Profile = () => {
     dog_friendly: true,
     dog_friendly_with: [] as string[],
     dog_photo_url: "",
+    gender: "" as string,
+    interested_in: [] as string[],
   });
 
   useEffect(() => {
@@ -115,6 +117,8 @@ const Profile = () => {
         dog_friendly: data.dog_friendly ?? true,
         dog_friendly_with: data.dog_friendly_with || [],
         dog_photo_url: data.dog_photo_url || "",
+        gender: data.gender || "",
+        interested_in: data.interested_in || [],
       });
       
       // Check if user has location coordinates
@@ -250,6 +254,8 @@ const Profile = () => {
           dog_friendly: profile.dog_friendly,
           dog_friendly_with: profile.dog_friendly_with,
           dog_photo_url: dogPhotoUrl,
+          gender: profile.gender || null,
+          interested_in: profile.interested_in,
         })
         .eq("user_id", user.id);
       
@@ -431,6 +437,50 @@ const Profile = () => {
                 placeholder="Tell others about yourself and why you love dogs..."
                 rows={3}
               />
+            </div>
+            
+            {/* Gender Selection */}
+            <div>
+              <Label htmlFor="gender">I am a</Label>
+              <select
+                id="gender"
+                value={profile.gender}
+                onChange={(e) => setProfile(p => ({ ...p, gender: e.target.value }))}
+                className="w-full p-2 rounded-md border border-input bg-background text-foreground"
+              >
+                <option value="">Select...</option>
+                <option value="man">Man</option>
+                <option value="woman">Woman</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+
+            {/* Interested In Selection */}
+            <div>
+              <Label>Interested in</Label>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {["man", "woman", "other"].map((option) => (
+                  <Badge
+                    key={option}
+                    variant={profile.interested_in.includes(option) ? "default" : "outline"}
+                    className="cursor-pointer capitalize"
+                    onClick={() => {
+                      setProfile(prev => ({
+                        ...prev,
+                        interested_in: prev.interested_in.includes(option)
+                          ? prev.interested_in.filter(o => o !== option)
+                          : [...prev.interested_in, option]
+                      }));
+                    }}
+                  >
+                    {option === "man" ? "Men" : option === "woman" ? "Women" : "Other"}
+                    {profile.interested_in.includes(option) && (
+                      <X className="w-3 h-3 ml-1" />
+                    )}
+                  </Badge>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">Select all that apply</p>
             </div>
           </div>
         </section>

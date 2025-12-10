@@ -263,7 +263,9 @@ export type Database = {
           dog_friendly_with: string[] | null
           dog_name: string | null
           dog_photo_url: string | null
+          gender: string | null
           id: string
+          interested_in: string[] | null
           last_seen: string | null
           latitude: number | null
           location: string | null
@@ -283,7 +285,9 @@ export type Database = {
           dog_friendly_with?: string[] | null
           dog_name?: string | null
           dog_photo_url?: string | null
+          gender?: string | null
           id?: string
+          interested_in?: string[] | null
           last_seen?: string | null
           latitude?: number | null
           location?: string | null
@@ -303,7 +307,9 @@ export type Database = {
           dog_friendly_with?: string[] | null
           dog_name?: string | null
           dog_photo_url?: string | null
+          gender?: string | null
           id?: string
+          interested_in?: string[] | null
           last_seen?: string | null
           latitude?: number | null
           location?: string | null
