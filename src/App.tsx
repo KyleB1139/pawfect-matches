@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import AgeVerification from "./pages/AgeVerification";
 import Discover from "./pages/Discover";
 import Matches from "./pages/Matches";
 import Messages from "./pages/Messages";
@@ -27,6 +28,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/age-verification" element={<AgeVerification />} />
             <Route path="/discover" element={<Discover />} />
             <Route path="/matches" element={<Matches />} />
             <Route path="/messages" element={<Messages />} />

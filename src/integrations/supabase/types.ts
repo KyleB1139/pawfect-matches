@@ -254,8 +254,10 @@ export type Database = {
       profiles: {
         Row: {
           age: number | null
+          age_verified_at: string | null
           avatar_url: string | null
           bio: string | null
+          birthdate: string | null
           created_at: string
           dog_age: number | null
           dog_breed: string | null
@@ -279,8 +281,10 @@ export type Database = {
         }
         Insert: {
           age?: number | null
+          age_verified_at?: string | null
           avatar_url?: string | null
           bio?: string | null
+          birthdate?: string | null
           created_at?: string
           dog_age?: number | null
           dog_breed?: string | null
@@ -304,8 +308,10 @@ export type Database = {
         }
         Update: {
           age?: number | null
+          age_verified_at?: string | null
           avatar_url?: string | null
           bio?: string | null
+          birthdate?: string | null
           created_at?: string
           dog_age?: number | null
           dog_breed?: string | null
