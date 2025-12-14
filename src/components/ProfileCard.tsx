@@ -82,10 +82,17 @@ const ProfileCard = ({ profile, onLike, onNope, onSuperLike, superLikesRemaining
             )}
           </div>
 
-          {/* Name & Age */}
-          <h2 className="font-display text-3xl font-bold mb-1">
-            {profile.name}{profile.age ? `, ${profile.age}` : ""}
-          </h2>
+          {/* Name, Age & Gender */}
+          <div className="flex items-center gap-2 mb-1">
+            <h2 className="font-display text-3xl font-bold">
+              {profile.name}{profile.age ? `, ${profile.age}` : ""}
+            </h2>
+            {profile.gender && (
+              <Badge variant="secondary" className="text-xs capitalize bg-background/20 text-primary-foreground border-none">
+                {profile.gender === "man" ? "♂ Man" : profile.gender === "woman" ? "♀ Woman" : "Other"}
+              </Badge>
+            )}
+          </div>
 
           {/* Location & Distance */}
           <div className="flex items-center gap-3 text-primary-foreground/80 mb-3">
