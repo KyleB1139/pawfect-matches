@@ -12,6 +12,13 @@ import { Dog, Star, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
+export interface ProfilePhoto {
+  id: string;
+  photo_url: string;
+  display_order: number;
+  is_primary: boolean;
+}
+
 export interface ProfileData {
   id: string;
   user_id: string;
@@ -29,6 +36,7 @@ export interface ProfileData {
   dog_photo_url: string | null;
   latitude?: number | null;
   longitude?: number | null;
+  photos?: ProfilePhoto[];
 }
 
 const Discover = () => {
@@ -329,23 +337,34 @@ const Discover = () => {
         variant: "destructive",
       });
     } else {
-      // Check which profiles are boosted and sort them first
-      const profilesWithBoost = await Promise.all(
+      // Fetch photos and boost status for each profile
+      const profilesWithExtras = await Promise.all(
         (data || []).map(async (profile) => {
-          const { data: isBoosted } = await supabase
-            .rpc("is_profile_boosted", { _profile_id: profile.id });
-          return { ...profile, isBoosted: !!isBoosted };
+          const [boostResult, photosResult] = await Promise.all([
+            supabase.rpc("is_profile_boosted", { _profile_id: profile.id }),
+            supabase
+              .from("profile_photos")
+              .select("*")
+              .eq("profile_id", profile.id)
+              .order("display_order", { ascending: true })
+          ]);
+          
+          return { 
+            ...profile, 
+            isBoosted: !!boostResult.data,
+            photos: photosResult.data || []
+          };
         })
       );
       
       // Sort boosted profiles first
-      profilesWithBoost.sort((a, b) => {
+      profilesWithExtras.sort((a, b) => {
         if (a.isBoosted && !b.isBoosted) return -1;
         if (!a.isBoosted && b.isBoosted) return 1;
         return 0;
       });
       
-      setProfiles(profilesWithBoost);
+      setProfiles(profilesWithExtras);
     }
     
     setIsLoading(false);

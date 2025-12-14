@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import Navigation from "@/components/Navigation";
+import { PhotoGallery } from "@/components/PhotoGallery";
 import { Dog, Camera, Save, Settings, X, Heart, ThumbsDown, Users, MapPin, CheckCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
@@ -33,7 +34,13 @@ const Profile = () => {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [dogPhotoPreview, setDogPhotoPreview] = useState<string | null>(null);
   const [stats, setStats] = useState({ passes: 0, likes: 0, matches: 0 });
-  
+  const [profileId, setProfileId] = useState<string | null>(null);
+  const [galleryPhotos, setGalleryPhotos] = useState<Array<{
+    id: string;
+    photo_url: string;
+    display_order: number;
+    is_primary: boolean;
+  }>>([]);
   const [profile, setProfile] = useState({
     name: "",
     age: "",
@@ -62,8 +69,33 @@ const Profile = () => {
     if (user) {
       fetchProfile();
       fetchStats();
+      fetchGalleryPhotos();
     }
   }, [user]);
+
+  const fetchGalleryPhotos = async () => {
+    if (!user) return;
+
+    const { data: userProfile } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!userProfile) return;
+
+    setProfileId(userProfile.id);
+
+    const { data: photos } = await supabase
+      .from("profile_photos")
+      .select("*")
+      .eq("profile_id", userProfile.id)
+      .order("display_order", { ascending: true });
+
+    if (photos) {
+      setGalleryPhotos(photos);
+    }
+  };
 
   const fetchStats = async () => {
     if (!user) return;
@@ -327,6 +359,21 @@ const Profile = () => {
             <p className="text-xs text-muted-foreground">Passed</p>
           </Card>
         </section>
+
+        {/* Photo Gallery Section */}
+        {user && profileId && (
+          <section className="space-y-4">
+            <Card className="p-4">
+              <PhotoGallery
+                userId={user.id}
+                profileId={profileId}
+                photos={galleryPhotos}
+                onPhotosChange={setGalleryPhotos}
+                maxPhotos={6}
+              />
+            </Card>
+          </section>
+        )}
 
         {/* Profile Photo Section */}
         <section className="space-y-4">
