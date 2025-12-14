@@ -273,6 +273,7 @@ export type Database = {
           max_age_preference: number | null
           min_age_preference: number | null
           name: string
+          terms_accepted_at: string | null
           updated_at: string
           user_id: string
         }
@@ -297,6 +298,7 @@ export type Database = {
           max_age_preference?: number | null
           min_age_preference?: number | null
           name: string
+          terms_accepted_at?: string | null
           updated_at?: string
           user_id: string
         }
@@ -321,6 +323,7 @@ export type Database = {
           max_age_preference?: number | null
           min_age_preference?: number | null
           name?: string
+          terms_accepted_at?: string | null
           updated_at?: string
           user_id?: string
         }

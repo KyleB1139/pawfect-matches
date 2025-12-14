@@ -52,9 +52,27 @@ const Discover = () => {
   });
 
   useEffect(() => {
-    if (!loading && !user) {
-      navigate("/auth");
-    }
+    const checkAuth = async () => {
+      if (loading) return;
+      
+      if (!user) {
+        navigate("/auth");
+        return;
+      }
+
+      // Check if user has accepted terms
+      const { data } = await supabase
+        .from("profiles")
+        .select("terms_accepted_at")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (data && !data.terms_accepted_at) {
+        navigate("/terms");
+      }
+    };
+
+    checkAuth();
   }, [user, loading, navigate]);
 
   const [userProfileId, setUserProfileId] = useState<string | null>(null);
