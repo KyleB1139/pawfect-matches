@@ -17,6 +17,7 @@ export interface ProfileData {
   user_id: string;
   name: string;
   age: number | null;
+  gender: string | null;
   bio: string | null;
   location: string | null;
   avatar_url: string | null;
