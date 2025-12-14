@@ -27,6 +27,7 @@ import {
   Key,
   Eye,
   EyeOff,
+  FileText,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -435,10 +436,36 @@ const Settings = () => {
           </Card>
         </section>
 
+        {/* Legal Section */}
+        <section>
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+            Legal
+          </h2>
+          <Card className="divide-y divide-border">
+            <button
+              onClick={() => navigate("/terms")}
+              className="w-full flex items-center justify-between p-4 hover:bg-accent/50 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <FileText className="w-5 h-5 text-primary" />
+                </div>
+                <div className="text-left">
+                  <p className="font-medium text-foreground">Terms of Service</p>
+                  <p className="text-sm text-muted-foreground">
+                    Review our terms and privacy policy
+                  </p>
+                </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-muted-foreground" />
+            </button>
+          </Card>
+        </section>
+
         {/* App Info */}
         <div className="text-center pt-4">
           <p className="text-sm text-muted-foreground">
-            PawMates v1.0.0
+            Fetch v1.0.0
           </p>
           <p className="text-xs text-muted-foreground mt-1">
             Made with ❤️ for dog lovers
