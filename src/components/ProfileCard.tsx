@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Heart, X, Star, MapPin, Dog, Navigation } from "lucide-react";
+import { Heart, X, Star, MapPin, Dog, Navigation, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ProfileData } from "@/pages/Discover";
@@ -18,6 +18,7 @@ interface ProfileCardProps {
 const ProfileCard = ({ profile, onLike, onNope, onSuperLike, superLikesRemaining = 0, distance, distanceLabel }: ProfileCardProps) => {
   const [swipeDirection, setSwipeDirection] = useState<"left" | "right" | null>(null);
   const [showDetails, setShowDetails] = useState(false);
+  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
 
   const handleLike = () => {
     setSwipeDirection("right");
@@ -29,8 +30,47 @@ const ProfileCard = ({ profile, onLike, onNope, onSuperLike, superLikesRemaining
     setTimeout(onNope, 400);
   };
 
-  // Use dog photo or avatar as the main image
-  const displayImage = profile.dog_photo_url || profile.avatar_url || "/placeholder.svg";
+  // Build array of all images (gallery photos first, then fallback to dog photo/avatar)
+  const allImages = (() => {
+    const images: string[] = [];
+    
+    // Add gallery photos (sorted by primary first)
+    if (profile.photos && profile.photos.length > 0) {
+      const sortedPhotos = [...profile.photos].sort((a, b) => {
+        if (a.is_primary) return -1;
+        if (b.is_primary) return 1;
+        return a.display_order - b.display_order;
+      });
+      images.push(...sortedPhotos.map(p => p.photo_url));
+    }
+    
+    // Add dog photo if exists and not already in gallery
+    if (profile.dog_photo_url && !images.includes(profile.dog_photo_url)) {
+      images.push(profile.dog_photo_url);
+    }
+    
+    // Add avatar if exists and not already in gallery
+    if (profile.avatar_url && !images.includes(profile.avatar_url)) {
+      images.push(profile.avatar_url);
+    }
+    
+    // Fallback to placeholder
+    if (images.length === 0) {
+      images.push("/placeholder.svg");
+    }
+    
+    return images;
+  })();
+
+  const handlePrevPhoto = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCurrentPhotoIndex((prev) => (prev > 0 ? prev - 1 : allImages.length - 1));
+  };
+
+  const handleNextPhoto = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCurrentPhotoIndex((prev) => (prev < allImages.length - 1 ? prev + 1 : 0));
+  };
 
   return (
     <div
@@ -47,10 +87,45 @@ const ProfileCard = ({ profile, onLike, onNope, onSuperLike, superLikesRemaining
       >
         {/* Image */}
         <img
-          src={displayImage}
+          src={allImages[currentPhotoIndex]}
           alt={`${profile.name} with ${profile.dog_name}`}
-          className="absolute inset-0 w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-cover transition-opacity duration-300"
         />
+
+        {/* Photo Navigation Dots */}
+        {allImages.length > 1 && (
+          <div className="absolute top-4 left-0 right-0 flex justify-center gap-1.5 z-10">
+            {allImages.map((_, index) => (
+              <div
+                key={index}
+                className={cn(
+                  "h-1 rounded-full transition-all duration-200",
+                  index === currentPhotoIndex 
+                    ? "w-6 bg-primary-foreground" 
+                    : "w-1.5 bg-primary-foreground/50"
+                )}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Photo Navigation Arrows */}
+        {allImages.length > 1 && (
+          <>
+            <button
+              onClick={handlePrevPhoto}
+              className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-foreground/20 backdrop-blur-sm flex items-center justify-center text-primary-foreground hover:bg-foreground/40 transition-colors z-10"
+            >
+              <ChevronLeft className="w-6 h-6" />
+            </button>
+            <button
+              onClick={handleNextPhoto}
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-foreground/20 backdrop-blur-sm flex items-center justify-center text-primary-foreground hover:bg-foreground/40 transition-colors z-10"
+            >
+              <ChevronRight className="w-6 h-6" />
+            </button>
+          </>
+        )}
 
         {/* Gradient Overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 via-foreground/20 to-transparent" />
