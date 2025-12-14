@@ -537,14 +537,6 @@ const Discover = () => {
     goToNext();
   };
 
-  if (loading || isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Dog className="w-12 h-12 text-primary animate-pulse" />
-      </div>
-    );
-  }
-
   // Calculate distance between two points
   const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
     const R = 6371; // Earth's radius in km
@@ -600,6 +592,14 @@ const Discover = () => {
   }, [profiles]);
 
   const currentProfile = filteredProfiles[currentIndex];
+
+  if (loading || isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Dog className="w-12 h-12 text-primary animate-pulse" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background pb-24">
