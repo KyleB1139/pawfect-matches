@@ -17,13 +17,92 @@ function generateCode(): string {
   return code;
 }
 
-// Simple hash function using Web Crypto API
-async function hashCode(code: string): Promise<string> {
+// Generate a random salt
+function generateSalt(): Uint8Array {
+  const salt = new Uint8Array(16);
+  crypto.getRandomValues(salt);
+  return salt;
+}
+
+// Convert Uint8Array to base64 string
+function uint8ArrayToBase64(arr: Uint8Array): string {
+  return btoa(String.fromCharCode(...arr));
+}
+
+// Convert base64 string to Uint8Array
+function base64ToUint8Array(base64: string): Uint8Array {
+  const binary = atob(base64);
+  const arr = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    arr[i] = binary.charCodeAt(i);
+  }
+  return arr;
+}
+
+// Hash code with PBKDF2 and salt for secure storage
+async function hashCodeWithSalt(code: string): Promise<string> {
   const encoder = new TextEncoder();
-  const data = encoder.encode(code);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+  const salt = generateSalt();
+  
+  const keyMaterial = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(code),
+    "PBKDF2",
+    false,
+    ["deriveBits"]
+  );
+  
+  const derivedBits = await crypto.subtle.deriveBits(
+    {
+      name: "PBKDF2",
+      salt: salt as unknown as BufferSource,
+      iterations: 100000,
+      hash: "SHA-256",
+    },
+    keyMaterial,
+    256
+  );
+  
+  const hashArray = new Uint8Array(derivedBits);
+  const saltBase64 = uint8ArrayToBase64(salt);
+  const hashBase64 = uint8ArrayToBase64(hashArray);
+  
+  // Return salt:hash format
+  return `${saltBase64}:${hashBase64}`;
+}
+
+// Verify a code against stored salted hash
+async function verifyCode(code: string, storedHash: string): Promise<boolean> {
+  const encoder = new TextEncoder();
+  const [saltBase64, hashBase64] = storedHash.split(":");
+  
+  if (!saltBase64 || !hashBase64) {
+    return false;
+  }
+  
+  const salt = base64ToUint8Array(saltBase64);
+  
+  const keyMaterial = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(code),
+    "PBKDF2",
+    false,
+    ["deriveBits"]
+  );
+  
+  const derivedBits = await crypto.subtle.deriveBits(
+    {
+      name: "PBKDF2",
+      salt: salt as unknown as BufferSource,
+      iterations: 100000,
+      hash: "SHA-256",
+    },
+    keyMaterial,
+    256
+  );
+  
+  const computedHash = uint8ArrayToBase64(new Uint8Array(derivedBits));
+  return computedHash === hashBase64;
 }
 
 Deno.serve(async (req) => {
@@ -83,7 +162,7 @@ Deno.serve(async (req) => {
       for (let i = 0; i < 10; i++) {
         const plainCode = generateCode();
         codes.push(plainCode);
-        const hashedCode = await hashCode(plainCode);
+        const hashedCode = await hashCodeWithSalt(plainCode);
         codeInserts.push({
           user_id: user.id,
           code_hash: hashedCode,
@@ -119,18 +198,34 @@ Deno.serve(async (req) => {
         );
       }
 
-      const hashedCode = await hashCode(code.toUpperCase().replace(/\s/g, ""));
+      const normalizedCode = code.toUpperCase().replace(/\s/g, "");
 
-      // Find unused backup code
-      const { data: backupCode, error: findError } = await adminClient
+      // Get all unused backup codes for this user
+      const { data: backupCodes, error: findError } = await adminClient
         .from("backup_codes")
-        .select("id")
+        .select("id, code_hash")
         .eq("user_id", user.id)
-        .eq("code_hash", hashedCode)
-        .is("used_at", null)
-        .single();
+        .is("used_at", null);
 
-      if (findError || !backupCode) {
+      if (findError || !backupCodes || backupCodes.length === 0) {
+        console.log("No backup codes found for user:", user.id);
+        return new Response(
+          JSON.stringify({ valid: false, error: "Invalid or already used backup code" }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Check each backup code
+      let matchedCodeId: string | null = null;
+      for (const bc of backupCodes) {
+        const isValid = await verifyCode(normalizedCode, bc.code_hash);
+        if (isValid) {
+          matchedCodeId = bc.id;
+          break;
+        }
+      }
+
+      if (!matchedCodeId) {
         console.log("Invalid backup code attempt for user:", user.id);
         return new Response(
           JSON.stringify({ valid: false, error: "Invalid or already used backup code" }),
@@ -142,7 +237,7 @@ Deno.serve(async (req) => {
       await adminClient
         .from("backup_codes")
         .update({ used_at: new Date().toISOString() })
-        .eq("id", backupCode.id);
+        .eq("id", matchedCodeId);
 
       // Unenroll all MFA factors for the user
       const { data: factorsData } = await adminClient.auth.admin.mfa.listFactors({
@@ -192,7 +287,6 @@ Deno.serve(async (req) => {
 
     if (action === "recover") {
       // Recovery action - used during login when 2FA blocks access
-      // The user is already authenticated at this point but needs to disable 2FA
       if (!code) {
         return new Response(
           JSON.stringify({ error: "Code is required" }),
@@ -200,18 +294,34 @@ Deno.serve(async (req) => {
         );
       }
 
-      const hashedCode = await hashCode(code.toUpperCase().replace(/\s/g, ""));
+      const normalizedCode = code.toUpperCase().replace(/\s/g, "");
 
-      // Find unused backup code
-      const { data: backupCode, error: findError } = await adminClient
+      // Get all unused backup codes for this user
+      const { data: backupCodes, error: findError } = await adminClient
         .from("backup_codes")
-        .select("id")
+        .select("id, code_hash")
         .eq("user_id", user.id)
-        .eq("code_hash", hashedCode)
-        .is("used_at", null)
-        .single();
+        .is("used_at", null);
 
-      if (findError || !backupCode) {
+      if (findError || !backupCodes || backupCodes.length === 0) {
+        console.log("No backup codes found for recovery for user:", user.id);
+        return new Response(
+          JSON.stringify({ valid: false, error: "Invalid or already used backup code" }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Check each backup code
+      let matchedCodeId: string | null = null;
+      for (const bc of backupCodes) {
+        const isValid = await verifyCode(normalizedCode, bc.code_hash);
+        if (isValid) {
+          matchedCodeId = bc.id;
+          break;
+        }
+      }
+
+      if (!matchedCodeId) {
         console.log("Invalid backup code recovery attempt for user:", user.id);
         return new Response(
           JSON.stringify({ valid: false, error: "Invalid or already used backup code" }),
@@ -223,7 +333,7 @@ Deno.serve(async (req) => {
       await adminClient
         .from("backup_codes")
         .update({ used_at: new Date().toISOString() })
-        .eq("id", backupCode.id);
+        .eq("id", matchedCodeId);
 
       // Unenroll all MFA factors for the user
       const { data: factorsData } = await adminClient.auth.admin.mfa.listFactors({
