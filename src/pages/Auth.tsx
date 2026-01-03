@@ -130,9 +130,9 @@ const Auth = () => {
         } else {
           toast({
             title: "Welcome to Fetch! 🐕",
-            description: "Your account has been created. Let's verify your age.",
+            description: "Let's set up your profile.",
           });
-          navigate("/age-verification");
+          navigate("/onboarding");
         }
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({
