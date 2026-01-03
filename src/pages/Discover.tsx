@@ -256,7 +256,7 @@ const Discover = () => {
     // Get user's profile ID and preferences
     const { data: userProfile } = await supabase
       .from("profiles")
-      .select("id, interested_in, min_age_preference, max_age_preference")
+      .select("id, interested_in, min_age_preference, max_age_preference, dog_friendly_with, dog_breed, latitude, longitude")
       .eq("user_id", user.id)
       .maybeSingle();
 
@@ -268,6 +268,8 @@ const Discover = () => {
     const interestedIn = userProfile.interested_in || [];
     const minAge = userProfile.min_age_preference;
     const maxAge = userProfile.max_age_preference;
+    const myDogFriendlyWith = userProfile.dog_friendly_with || [];
+    const myDogBreed = userProfile.dog_breed;
 
     // Get already liked profiles to exclude them
     const { data: likedData } = await supabase
@@ -285,8 +287,7 @@ const Discover = () => {
     
     const blockedIds = blockedData?.map(b => b.blocked_profile_id) || [];
 
-    // Get profiles that blocked the current user using the is_blocked function
-    // We'll filter these on the server side via the RPC function
+    // Get profiles that blocked the current user
     const { data: blockedByData } = await supabase
       .rpc("get_blocked_by_ids" as any, { _user_id: userProfile.id });
     
@@ -299,6 +300,22 @@ const Discover = () => {
       .eq("user_id", userProfile.id);
     
     const passedIds = (passedData as unknown as { passed_profile_id: string }[] | null)?.map(p => p.passed_profile_id) || [];
+
+    // Get profiles who super-liked the current user (prioritize these)
+    const { data: superLikedByData } = await supabase
+      .from("super_likes")
+      .select("user_id")
+      .eq("liked_profile_id", userProfile.id);
+    
+    const superLikedByIds = new Set(superLikedByData?.map(s => s.user_id) || []);
+
+    // Get profiles who liked the current user (show potential matches)
+    const { data: likedByData } = await supabase
+      .from("likes")
+      .select("user_id")
+      .eq("liked_profile_id", userProfile.id);
+    
+    const likedByIds = new Set(likedByData?.map(l => l.user_id) || []);
 
     // Combine all IDs to exclude
     const excludeIds = [...new Set([...likedIds, ...blockedIds, ...blockedByIds, ...passedIds])];
@@ -348,20 +365,68 @@ const Discover = () => {
               .eq("profile_id", profile.id)
               .order("display_order", { ascending: true })
           ]);
+
+          // Calculate compatibility score
+          let compatibilityScore = 0;
+          
+          // Dog friendliness compatibility (0-40 points)
+          const theirDogFriendlyWith = profile.dog_friendly_with || [];
+          const friendlinessOverlap = myDogFriendlyWith.filter(f => theirDogFriendlyWith.includes(f)).length;
+          compatibilityScore += friendlinessOverlap * 10;
+          
+          // Breed compatibility bonus (10 points if same breed)
+          if (myDogBreed && profile.dog_breed === myDogBreed) {
+            compatibilityScore += 10;
+          }
+          
+          // Profile completeness bonus (0-20 points)
+          if (profile.bio) compatibilityScore += 5;
+          if (profile.avatar_url) compatibilityScore += 5;
+          if (profile.dog_photo_url) compatibilityScore += 5;
+          if (profile.location) compatibilityScore += 5;
+          
+          // Distance bonus (closer = higher score, max 20 points)
+          if (userProfile.latitude && userProfile.longitude && profile.latitude && profile.longitude) {
+            const R = 6371;
+            const dLat = ((profile.latitude - userProfile.latitude) * Math.PI) / 180;
+            const dLon = ((profile.longitude - userProfile.longitude) * Math.PI) / 180;
+            const a = Math.sin(dLat / 2) ** 2 + 
+              Math.cos((userProfile.latitude * Math.PI) / 180) * 
+              Math.cos((profile.latitude * Math.PI) / 180) * 
+              Math.sin(dLon / 2) ** 2;
+            const distance = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            
+            // Within 10km = 20 points, decreasing as distance increases
+            compatibilityScore += Math.max(0, 20 - Math.floor(distance / 5));
+          }
           
           return { 
             ...profile, 
             isBoosted: !!boostResult.data,
+            superLikedYou: superLikedByIds.has(profile.id),
+            likedYou: likedByIds.has(profile.id),
+            compatibilityScore,
             photos: photosResult.data || []
           };
         })
       );
       
-      // Sort boosted profiles first
+      // Enhanced sorting algorithm
       profilesWithExtras.sort((a, b) => {
+        // 1. Super-liked profiles first (they really want to match!)
+        if (a.superLikedYou && !b.superLikedYou) return -1;
+        if (!a.superLikedYou && b.superLikedYou) return 1;
+        
+        // 2. Boosted profiles second
         if (a.isBoosted && !b.isBoosted) return -1;
         if (!a.isBoosted && b.isBoosted) return 1;
-        return 0;
+        
+        // 3. Profiles who liked you (potential instant matches)
+        if (a.likedYou && !b.likedYou) return -1;
+        if (!a.likedYou && b.likedYou) return 1;
+        
+        // 4. Sort by compatibility score
+        return b.compatibilityScore - a.compatibilityScore;
       });
       
       setProfiles(profilesWithExtras);
