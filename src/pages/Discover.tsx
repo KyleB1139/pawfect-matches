@@ -256,7 +256,7 @@ const Discover = () => {
     // Get user's profile ID and preferences
     const { data: userProfile } = await supabase
       .from("profiles")
-      .select("id, interested_in, min_age_preference, max_age_preference, dog_friendly_with, dog_breed, latitude, longitude")
+      .select("id, interested_in, min_age_preference, max_age_preference, dog_friendly_with, dog_breed, latitude, longitude, looking_for, lifestyle")
       .eq("user_id", user.id)
       .maybeSingle();
 
@@ -270,6 +270,8 @@ const Discover = () => {
     const maxAge = userProfile.max_age_preference;
     const myDogFriendlyWith = userProfile.dog_friendly_with || [];
     const myDogBreed = userProfile.dog_breed;
+    const myLookingFor = userProfile.looking_for || [];
+    const myLifestyle = userProfile.lifestyle || [];
 
     // Get already liked profiles to exclude them
     const { data: likedData } = await supabase
@@ -369,7 +371,7 @@ const Discover = () => {
           // Calculate compatibility score
           let compatibilityScore = 0;
           
-          // Dog friendliness compatibility (0-40 points)
+          // Dog friendliness compatibility (0-50 points)
           const theirDogFriendlyWith = profile.dog_friendly_with || [];
           const friendlinessOverlap = myDogFriendlyWith.filter(f => theirDogFriendlyWith.includes(f)).length;
           compatibilityScore += friendlinessOverlap * 10;
@@ -378,6 +380,16 @@ const Discover = () => {
           if (myDogBreed && profile.dog_breed === myDogBreed) {
             compatibilityScore += 10;
           }
+          
+          // Looking for compatibility (0-50 points) - most important for dating
+          const theirLookingFor = profile.looking_for || [];
+          const lookingForOverlap = myLookingFor.filter(l => theirLookingFor.includes(l)).length;
+          compatibilityScore += lookingForOverlap * 15;
+          
+          // Lifestyle compatibility (0-40 points)
+          const theirLifestyle = profile.lifestyle || [];
+          const lifestyleOverlap = myLifestyle.filter(l => theirLifestyle.includes(l)).length;
+          compatibilityScore += lifestyleOverlap * 10;
           
           // Profile completeness bonus (0-20 points)
           if (profile.bio) compatibilityScore += 5;

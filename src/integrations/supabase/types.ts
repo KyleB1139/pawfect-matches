@@ -305,8 +305,10 @@ export type Database = {
           interested_in: string[] | null
           last_seen: string | null
           latitude: number | null
+          lifestyle: string[] | null
           location: string | null
           longitude: number | null
+          looking_for: string[] | null
           max_age_preference: number | null
           min_age_preference: number | null
           name: string
@@ -332,8 +334,10 @@ export type Database = {
           interested_in?: string[] | null
           last_seen?: string | null
           latitude?: number | null
+          lifestyle?: string[] | null
           location?: string | null
           longitude?: number | null
+          looking_for?: string[] | null
           max_age_preference?: number | null
           min_age_preference?: number | null
           name: string
@@ -359,8 +363,10 @@ export type Database = {
           interested_in?: string[] | null
           last_seen?: string | null
           latitude?: number | null
+          lifestyle?: string[] | null
           location?: string | null
           longitude?: number | null
+          looking_for?: string[] | null
           max_age_preference?: number | null
           min_age_preference?: number | null
           name?: string

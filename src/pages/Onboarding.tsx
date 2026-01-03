@@ -30,6 +30,8 @@ const dogBreeds = [
 const friendlyOptions = ["Small dogs", "Large dogs", "Cats", "Children", "Everyone"];
 const genderOptions = ["Man", "Woman", "Non-binary", "Prefer not to say"];
 const interestedInOptions = ["Men", "Women", "Everyone"];
+const lookingForOptions = ["Long-term relationship", "Casual dating", "Friendship", "Dog playdates", "Open to anything"];
+const lifestyleOptions = ["Active & outdoorsy", "Homebody", "Social butterfly", "Adventurous", "Laid-back", "Fitness enthusiast", "Night owl", "Early bird"];
 
 interface OnboardingData {
   name: string;
@@ -38,6 +40,8 @@ interface OnboardingData {
   bio: string;
   location: string;
   interested_in: string[];
+  looking_for: string[];
+  lifestyle: string[];
   min_age_preference: string;
   max_age_preference: string;
   dog_name: string;
@@ -75,6 +79,8 @@ const Onboarding = () => {
     bio: "",
     location: "",
     interested_in: [],
+    looking_for: [],
+    lifestyle: [],
     min_age_preference: "18",
     max_age_preference: "50",
     dog_name: "",
@@ -115,6 +121,8 @@ const Onboarding = () => {
         bio: profile.bio || "",
         location: profile.location || "",
         interested_in: profile.interested_in || [],
+        looking_for: profile.looking_for || [],
+        lifestyle: profile.lifestyle || [],
         min_age_preference: profile.min_age_preference?.toString() || "18",
         max_age_preference: profile.max_age_preference?.toString() || "50",
         dog_name: profile.dog_name || "",
@@ -133,7 +141,7 @@ const Onboarding = () => {
     setData(prev => ({ ...prev, [field]: value }));
   };
 
-  const toggleArrayField = (field: 'interested_in' | 'dog_friendly_with', option: string) => {
+  const toggleArrayField = (field: 'interested_in' | 'dog_friendly_with' | 'looking_for' | 'lifestyle', option: string) => {
     setData(prev => ({
       ...prev,
       [field]: prev[field].includes(option)
@@ -293,6 +301,8 @@ const Onboarding = () => {
           bio: data.bio,
           location: data.location,
           interested_in: data.interested_in,
+          looking_for: data.looking_for,
+          lifestyle: data.lifestyle,
           min_age_preference: data.min_age_preference ? parseInt(data.min_age_preference) : null,
           max_age_preference: data.max_age_preference ? parseInt(data.max_age_preference) : null,
           dog_name: data.dog_name,
@@ -565,7 +575,7 @@ const Onboarding = () => {
               <p className="text-muted-foreground mt-2">Help us find your perfect match</p>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div>
                 <Label>I'm interested in</Label>
                 <div className="flex flex-wrap gap-2 mt-2">
@@ -575,6 +585,40 @@ const Onboarding = () => {
                       variant={data.interested_in.includes(option) ? "default" : "outline"}
                       className="cursor-pointer px-4 py-2 text-sm transition-all hover:scale-105"
                       onClick={() => toggleArrayField('interested_in', option)}
+                    >
+                      {option}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <Label>What are you looking for?</Label>
+                <p className="text-xs text-muted-foreground mb-2">Select all that apply</p>
+                <div className="flex flex-wrap gap-2">
+                  {lookingForOptions.map((option) => (
+                    <Badge
+                      key={option}
+                      variant={data.looking_for.includes(option) ? "default" : "outline"}
+                      className="cursor-pointer px-4 py-2 text-sm transition-all hover:scale-105"
+                      onClick={() => toggleArrayField('looking_for', option)}
+                    >
+                      {option}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <Label>Your lifestyle</Label>
+                <p className="text-xs text-muted-foreground mb-2">What describes you best?</p>
+                <div className="flex flex-wrap gap-2">
+                  {lifestyleOptions.map((option) => (
+                    <Badge
+                      key={option}
+                      variant={data.lifestyle.includes(option) ? "default" : "outline"}
+                      className="cursor-pointer px-4 py-2 text-sm transition-all hover:scale-105"
+                      onClick={() => toggleArrayField('lifestyle', option)}
                     >
                       {option}
                     </Badge>
