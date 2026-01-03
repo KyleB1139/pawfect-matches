@@ -21,6 +21,8 @@ const dogBreeds = [
 ];
 
 const friendlyOptions = ["Small dogs", "Large dogs", "Cats", "Children", "Everyone"];
+const lookingForOptions = ["Long-term relationship", "Casual dating", "Friendship", "Dog playdates", "Open to anything"];
+const lifestyleOptions = ["Active & outdoorsy", "Homebody", "Social butterfly", "Adventurous", "Laid-back", "Fitness enthusiast", "Night owl", "Early bird"];
 
 const Profile = () => {
   const { user, loading } = useAuth();
@@ -55,6 +57,8 @@ const Profile = () => {
     dog_photo_url: "",
     gender: "" as string,
     interested_in: [] as string[],
+    looking_for: [] as string[],
+    lifestyle: [] as string[],
     min_age_preference: "" as string,
     max_age_preference: "" as string,
   });
@@ -153,6 +157,8 @@ const Profile = () => {
         dog_photo_url: data.dog_photo_url || "",
         gender: data.gender || "",
         interested_in: data.interested_in || [],
+        looking_for: data.looking_for || [],
+        lifestyle: data.lifestyle || [],
         min_age_preference: data.min_age_preference?.toString() || "",
         max_age_preference: data.max_age_preference?.toString() || "",
       });
@@ -292,6 +298,8 @@ const Profile = () => {
           dog_photo_url: dogPhotoUrl,
           gender: profile.gender || null,
           interested_in: profile.interested_in,
+          looking_for: profile.looking_for,
+          lifestyle: profile.lifestyle,
           min_age_preference: profile.min_age_preference ? parseInt(profile.min_age_preference) : null,
           max_age_preference: profile.max_age_preference ? parseInt(profile.max_age_preference) : null,
         })
@@ -560,6 +568,62 @@ const Profile = () => {
                 </div>
               </div>
               <p className="text-xs text-muted-foreground mt-1">Leave empty to see all ages</p>
+            </div>
+
+            {/* Looking For */}
+            <div>
+              <Label>Looking for</Label>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {lookingForOptions.map((option) => (
+                  <Badge
+                    key={option}
+                    variant={profile.looking_for.includes(option) ? "default" : "outline"}
+                    className="cursor-pointer"
+                    onClick={() => {
+                      setProfile(prev => ({
+                        ...prev,
+                        looking_for: prev.looking_for.includes(option)
+                          ? prev.looking_for.filter(o => o !== option)
+                          : [...prev.looking_for, option]
+                      }));
+                    }}
+                  >
+                    {option}
+                    {profile.looking_for.includes(option) && (
+                      <X className="w-3 h-3 ml-1" />
+                    )}
+                  </Badge>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">Select all that apply</p>
+            </div>
+
+            {/* Lifestyle */}
+            <div>
+              <Label>Your lifestyle</Label>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {lifestyleOptions.map((option) => (
+                  <Badge
+                    key={option}
+                    variant={profile.lifestyle.includes(option) ? "default" : "outline"}
+                    className="cursor-pointer"
+                    onClick={() => {
+                      setProfile(prev => ({
+                        ...prev,
+                        lifestyle: prev.lifestyle.includes(option)
+                          ? prev.lifestyle.filter(o => o !== option)
+                          : [...prev.lifestyle, option]
+                      }));
+                    }}
+                  >
+                    {option}
+                    {profile.lifestyle.includes(option) && (
+                      <X className="w-3 h-3 ml-1" />
+                    )}
+                  </Badge>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">What describes you best?</p>
             </div>
           </div>
         </section>
