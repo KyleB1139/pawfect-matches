@@ -710,32 +710,33 @@ const Onboarding = () => {
 
       {/* Navigation Buttons */}
       <div className="fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-md border-t border-border p-4">
-        <div className="max-w-lg mx-auto flex gap-3">
-          {currentStep > 1 && (
-            <Button
-              variant="outline"
-              onClick={prevStep}
-              className="flex-1"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back
-            </Button>
-          )}
-          
-          {currentStep < STEPS.length ? (
-            <Button
-              onClick={nextStep}
-              className="flex-1"
-            >
-              Next
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
-          ) : (
-            <Button
-              onClick={handleComplete}
-              disabled={isSaving}
-              className="flex-1 gap-2"
-            >
+        <div className="max-w-lg mx-auto space-y-2">
+          <div className="flex gap-3">
+            {currentStep > 1 && (
+              <Button
+                variant="outline"
+                onClick={prevStep}
+                className="flex-1"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back
+              </Button>
+            )}
+            
+            {currentStep < STEPS.length ? (
+              <Button
+                onClick={nextStep}
+                className="flex-1"
+              >
+                Next
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            ) : (
+              <Button
+                onClick={handleComplete}
+                disabled={isSaving}
+                className="flex-1 gap-2"
+              >
               {isSaving ? (
                 <Dog className="w-5 h-5 animate-spin" />
               ) : (
@@ -746,6 +747,15 @@ const Onboarding = () => {
               )}
             </Button>
           )}
+          </div>
+          
+          <Button
+            variant="ghost"
+            onClick={() => navigate("/discover")}
+            className="w-full text-muted-foreground hover:text-foreground"
+          >
+            Skip for now
+          </Button>
         </div>
       </div>
     </div>
