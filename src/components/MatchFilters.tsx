@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -17,8 +18,16 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Filter, X, MapPin } from "lucide-react";
+import { Filter, X, MapPin, Heart } from "lucide-react";
 import { useDistanceUnit } from "@/hooks/useDistanceUnit";
+
+export const RELATIONSHIP_GOALS = [
+  "Long-term relationship",
+  "Casual dating",
+  "New friends",
+  "Not sure yet",
+  "Marriage",
+];
 
 export interface MatchFilters {
   breed: string;
@@ -26,6 +35,8 @@ export interface MatchFilters {
   maxAge: number | null;
   location: string;
   maxDistance: number | null; // in km
+  lookingFor: string[]; // relationship goals filter
+  matchMyLookingFor: boolean; // only show profiles with overlapping goals
 }
 
 interface MatchFiltersProps {
@@ -53,7 +64,9 @@ const MatchFiltersComponent = ({
     filters.minAge !== null ||
     filters.maxAge !== null ||
     filters.location ||
-    filters.maxDistance !== null;
+    filters.maxDistance !== null ||
+    filters.lookingFor.length > 0 ||
+    filters.matchMyLookingFor;
 
   const clearFilters = () => {
     onFiltersChange({
@@ -62,7 +75,16 @@ const MatchFiltersComponent = ({
       maxAge: null,
       location: "",
       maxDistance: null,
+      lookingFor: [],
+      matchMyLookingFor: false,
     });
+  };
+
+  const toggleLookingFor = (goal: string) => {
+    const updated = filters.lookingFor.includes(goal)
+      ? filters.lookingFor.filter((g) => g !== goal)
+      : [...filters.lookingFor, goal];
+    onFiltersChange({ ...filters, lookingFor: updated });
   };
 
   return (
@@ -217,6 +239,47 @@ const MatchFiltersComponent = ({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Looking For Filter */}
+          <div className="space-y-3">
+            <Label className="flex items-center gap-2">
+              <Heart className="w-4 h-4" />
+              Looking For
+            </Label>
+            
+            <div className="flex items-center space-x-2 p-3 rounded-lg bg-muted/50">
+              <Checkbox
+                id="matchMyLookingFor"
+                checked={filters.matchMyLookingFor}
+                onCheckedChange={(checked) =>
+                  onFiltersChange({ ...filters, matchMyLookingFor: checked === true })
+                }
+              />
+              <label
+                htmlFor="matchMyLookingFor"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Only show profiles matching my relationship goals
+              </label>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">Or filter by specific goals:</p>
+              <div className="flex flex-wrap gap-2">
+                {RELATIONSHIP_GOALS.map((goal) => (
+                  <Button
+                    key={goal}
+                    variant={filters.lookingFor.includes(goal) ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => toggleLookingFor(goal)}
+                    className="text-xs"
+                  >
+                    {goal}
+                  </Button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 

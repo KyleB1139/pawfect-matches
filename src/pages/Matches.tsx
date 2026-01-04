@@ -49,6 +49,8 @@ const Matches = () => {
     maxAge: null,
     location: "",
     maxDistance: null,
+    lookingFor: [],
+    matchMyLookingFor: false,
   });
 
   // Track presence for online status
