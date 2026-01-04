@@ -52,6 +52,7 @@ const LikedYou = () => {
   const { toast } = useToast();
   const [likes, setLikes] = useState<LikeData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userProfileId, setUserProfileId] = useState<string | null>(null);
   const [selectedProfile, setSelectedProfile] = useState<FullProfile | null>(null);
   const [selectedIsSuperLike, setSelectedIsSuperLike] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -97,6 +98,8 @@ const LikedYou = () => {
         setLoading(false);
         return;
       }
+
+      setUserProfileId(userProfile.id);
 
       // Get regular likes on user's profile
       const { data: likesData, error: likesError } = await supabase
@@ -396,6 +399,13 @@ const LikedYou = () => {
         onOpenChange={setDialogOpen}
         onLikeBack={() => selectedProfile && handleLikeBack(selectedProfile.id)}
         isSuperLike={selectedIsSuperLike}
+        userProfileId={userProfileId || undefined}
+        onBlock={() => {
+          // Remove blocked profile from list
+          if (selectedProfile) {
+            setLikes(prev => prev.filter(l => l.profile.id !== selectedProfile.id));
+          }
+        }}
       />
 
       <Navigation />
