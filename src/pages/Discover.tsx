@@ -36,6 +36,8 @@ export interface ProfileData {
   dog_photo_url: string | null;
   latitude?: number | null;
   longitude?: number | null;
+  looking_for?: string[] | null;
+  lifestyle?: string[] | null;
   photos?: ProfilePhoto[];
 }
 
@@ -52,12 +54,15 @@ const Discover = () => {
   const [superLikesRemaining, setSuperLikesRemaining] = useState(3);
   const [isBoostActive, setIsBoostActive] = useState(false);
   const [boostEndsAt, setBoostEndsAt] = useState<Date | null>(null);
+  const [userLookingFor, setUserLookingFor] = useState<string[]>([]);
   const [filters, setFilters] = useState<MatchFilters>({
     breed: "",
     minAge: null,
     maxAge: null,
     location: "",
     maxDistance: null,
+    lookingFor: [],
+    matchMyLookingFor: false,
   });
 
   useEffect(() => {
@@ -272,6 +277,9 @@ const Discover = () => {
     const myDogBreed = userProfile.dog_breed;
     const myLookingFor = userProfile.looking_for || [];
     const myLifestyle = userProfile.lifestyle || [];
+    
+    // Store user's looking_for for filtering
+    setUserLookingFor(myLookingFor);
 
     // Get already liked profiles to exclude them
     const { data: likedData } = await supabase
@@ -418,7 +426,7 @@ const Discover = () => {
             superLikedYou: superLikedByIds.has(profile.id),
             likedYou: likedByIds.has(profile.id),
             compatibilityScore,
-            photos: photosResult.data || []
+            photos: photosResult.data || [],
           };
         })
       );
@@ -691,9 +699,23 @@ const Discover = () => {
       // Location filter
       if (filters.location && profile.location !== filters.location) return false;
 
+      // Looking for filter - match my goals
+      if (filters.matchMyLookingFor && userLookingFor.length > 0) {
+        const profileLookingFor = profile.looking_for || [];
+        const hasOverlap = userLookingFor.some((goal) => profileLookingFor.includes(goal));
+        if (!hasOverlap && profileLookingFor.length > 0) return false;
+      }
+
+      // Looking for filter - specific goals selected
+      if (filters.lookingFor.length > 0) {
+        const profileLookingFor = profile.looking_for || [];
+        const hasMatch = filters.lookingFor.some((goal) => profileLookingFor.includes(goal));
+        if (!hasMatch) return false;
+      }
+
       return true;
     });
-  }, [profiles, filters, userLocation]);
+  }, [profiles, filters, userLocation, userLookingFor]);
 
   // Get available filter options from profiles
   const availableBreeds = useMemo(() => {
