@@ -54,16 +54,29 @@ export const useNotificationCounts = () => {
 
       setNewMatches(unseenMatches?.length || 0);
 
-      // Count likes and super likes on user's profile
+      // Get last viewed time for likes
+      const { data: likeView } = await supabase
+        .from('like_views')
+        .select('last_viewed_at')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      const lastLikesViewed = likeView?.last_viewed_at 
+        ? new Date(likeView.last_viewed_at) 
+        : new Date(0);
+
+      // Count new likes since last viewed
       const { count: likesCount } = await supabase
         .from('likes')
         .select('*', { count: 'exact', head: true })
-        .eq('liked_profile_id', profileId);
+        .eq('liked_profile_id', profileId)
+        .gt('created_at', lastLikesViewed.toISOString());
 
       const { count: superLikesCount } = await supabase
         .from('super_likes')
         .select('*', { count: 'exact', head: true })
-        .eq('liked_profile_id', profileId);
+        .eq('liked_profile_id', profileId)
+        .gt('created_at', lastLikesViewed.toISOString());
 
       setNewLikes((likesCount || 0) + (superLikesCount || 0));
     };

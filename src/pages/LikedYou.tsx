@@ -42,8 +42,21 @@ const LikedYou = () => {
   useEffect(() => {
     if (user) {
       fetchLikes();
+      markLikesAsViewed();
     }
   }, [user]);
+
+  const markLikesAsViewed = async () => {
+    if (!user) return;
+    
+    // Upsert the like_views record
+    await supabase
+      .from("like_views")
+      .upsert(
+        { user_id: user.id, last_viewed_at: new Date().toISOString() },
+        { onConflict: 'user_id' }
+      );
+  };
 
   const fetchLikes = async () => {
     if (!user) return;
