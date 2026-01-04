@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import Navigation from "@/components/Navigation";
+import ProfilePreviewDialog from "@/components/ProfilePreviewDialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,17 +13,36 @@ import { Heart, Star, User, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 
+interface ProfilePhoto {
+  id: string;
+  photo_url: string;
+  is_primary: boolean;
+  display_order: number;
+}
+
+interface FullProfile {
+  id: string;
+  name: string;
+  age: number | null;
+  avatar_url: string | null;
+  location: string | null;
+  bio: string | null;
+  gender: string | null;
+  dog_name: string | null;
+  dog_breed: string | null;
+  dog_age: number | null;
+  dog_photo_url: string | null;
+  dog_friendly: boolean | null;
+  dog_friendly_with: string[] | null;
+  looking_for: string[] | null;
+  lifestyle: string[] | null;
+  photos?: ProfilePhoto[];
+}
+
 interface LikeData {
   id: string;
   created_at: string;
-  profile: {
-    id: string;
-    name: string;
-    age: number | null;
-    avatar_url: string | null;
-    location: string | null;
-    bio: string | null;
-  };
+  profile: FullProfile;
   isSuperLike: boolean;
 }
 
@@ -32,6 +52,9 @@ const LikedYou = () => {
   const { toast } = useToast();
   const [likes, setLikes] = useState<LikeData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedProfile, setSelectedProfile] = useState<FullProfile | null>(null);
+  const [selectedIsSuperLike, setSelectedIsSuperLike] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -113,15 +136,30 @@ const LikedYou = () => {
         return;
       }
 
-      // Fetch profiles for all likers
+      // Fetch full profiles for all likers
       const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
-        .select("id, name, age, avatar_url, location, bio")
+        .select("id, name, age, avatar_url, location, bio, gender, dog_name, dog_breed, dog_age, dog_photo_url, dog_friendly, dog_friendly_with, looking_for, lifestyle")
         .in("id", likerProfileIds);
 
       if (profilesError) throw profilesError;
 
-      const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+      // Fetch photos for all likers
+      const { data: allPhotos } = await supabase
+        .from("profile_photos")
+        .select("id, profile_id, photo_url, is_primary, display_order")
+        .in("profile_id", likerProfileIds);
+
+      // Group photos by profile
+      const photosByProfile = new Map<string, ProfilePhoto[]>();
+      (allPhotos || []).forEach(photo => {
+        const existing = photosByProfile.get(photo.profile_id) || [];
+        existing.push(photo);
+        photosByProfile.set(photo.profile_id, existing);
+      });
+
+      // Map profiles with photos
+      const profileMap = new Map(profiles?.map(p => [p.id, { ...p, photos: photosByProfile.get(p.id) || [] }]) || []);
 
       // Combine and format the data
       const formattedLikes: LikeData[] = [];
@@ -133,7 +171,7 @@ const LikedYou = () => {
           formattedLikes.push({
             id: like.id,
             created_at: like.created_at,
-            profile,
+            profile: profile as FullProfile,
             isSuperLike: false,
           });
         }
@@ -146,7 +184,7 @@ const LikedYou = () => {
           formattedLikes.push({
             id: `super-${like.id}`,
             created_at: like.created_at,
-            profile,
+            profile: profile as FullProfile,
             isSuperLike: true,
           });
         }
@@ -289,7 +327,15 @@ const LikedYou = () => {
               {likes.length} {likes.length === 1 ? "person" : "people"} liked you
             </p>
             {likes.map((like) => (
-              <Card key={like.id} className="overflow-hidden">
+              <Card 
+                key={like.id} 
+                className="overflow-hidden cursor-pointer hover:bg-accent/50 transition-colors"
+                onClick={() => {
+                  setSelectedProfile(like.profile);
+                  setSelectedIsSuperLike(like.isSuperLike);
+                  setDialogOpen(true);
+                }}
+              >
                 <CardContent className="p-4">
                   <div className="flex items-center gap-4">
                     <Avatar className="w-16 h-16 border-2 border-border">
@@ -322,7 +368,10 @@ const LikedYou = () => {
                     </div>
                     <Button
                       size="sm"
-                      onClick={() => handleLikeBack(like.profile.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleLikeBack(like.profile.id);
+                      }}
                       className="shrink-0"
                     >
                       <Heart className="w-4 h-4 mr-1" />
@@ -340,6 +389,14 @@ const LikedYou = () => {
           </div>
         )}
       </main>
+
+      <ProfilePreviewDialog
+        profile={selectedProfile}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onLikeBack={() => selectedProfile && handleLikeBack(selectedProfile.id)}
+        isSuperLike={selectedIsSuperLike}
+      />
 
       <Navigation />
     </div>
