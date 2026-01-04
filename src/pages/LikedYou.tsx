@@ -170,6 +170,24 @@ const LikedYou = () => {
 
       if (!userProfile) return;
 
+      // Check if user already liked this profile
+      const { data: existingLike } = await supabase
+        .from("likes")
+        .select("id")
+        .eq("user_id", userProfile.id)
+        .eq("liked_profile_id", profileId)
+        .maybeSingle();
+
+      if (existingLike) {
+        // Already a mutual like - it's a match!
+        toast({
+          title: "It's a match! 🎉",
+          description: "You both like each other!",
+        });
+        navigate("/matches");
+        return;
+      }
+
       // Insert a like
       const { error } = await supabase
         .from("likes")
@@ -178,17 +196,7 @@ const LikedYou = () => {
           liked_profile_id: profileId,
         });
 
-      if (error) {
-        if (error.code === "23505") {
-          toast({
-            title: "Already liked",
-            description: "You've already liked this profile",
-          });
-        } else {
-          throw error;
-        }
-        return;
-      }
+      if (error) throw error;
 
       toast({
         title: "It's a match! 🎉",
