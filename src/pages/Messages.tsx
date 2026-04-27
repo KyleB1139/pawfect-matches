@@ -74,7 +74,7 @@ const Messages = () => {
   const [userProfileId, setUserProfileId] = useState<string | null>(null);
   const [isOtherTyping, setIsOtherTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const typingChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const { isUserOnline } = usePresence(user?.id || null, userProfileId);
