@@ -76,6 +76,8 @@ const Messages = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const typingChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const otherTypingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isTypingRef = useRef(false);
 
   const { isUserOnline } = usePresence(user?.id || null, userProfileId);
 
@@ -124,6 +126,10 @@ const Messages = () => {
             if (newMsg.sender_id !== userProfileId) {
               markMessagesAsRead(activeConversation.id);
               setIsOtherTyping(false); // They sent a message, so they stopped typing
+              if (otherTypingTimeoutRef.current) {
+                clearTimeout(otherTypingTimeoutRef.current);
+                otherTypingTimeoutRef.current = null;
+              }
             }
           }
         )
@@ -149,7 +155,23 @@ const Messages = () => {
         .channel(`typing:${activeConversation.id}`)
         .on('broadcast', { event: 'typing' }, (payload) => {
           if (payload.payload.userId !== userProfileId) {
-            setIsOtherTyping(payload.payload.isTyping);
+            const isTyping = Boolean(payload.payload.isTyping);
+            setIsOtherTyping(isTyping);
+
+            // Clear any pending auto-hide timer
+            if (otherTypingTimeoutRef.current) {
+              clearTimeout(otherTypingTimeoutRef.current);
+              otherTypingTimeoutRef.current = null;
+            }
+
+            // Safety net: auto-hide indicator if no follow-up event arrives
+            // (e.g. sender's tab closed, lost connection, missed "stop" event)
+            if (isTyping) {
+              otherTypingTimeoutRef.current = setTimeout(() => {
+                setIsOtherTyping(false);
+                otherTypingTimeoutRef.current = null;
+              }, 5000);
+            }
           }
         })
         .subscribe();
@@ -157,9 +179,20 @@ const Messages = () => {
       typingChannelRef.current = typingChannel;
 
       return () => {
+        // Stop any local typing broadcast before tearing down the channel
+        if (typingTimeoutRef.current) {
+          clearTimeout(typingTimeoutRef.current);
+          typingTimeoutRef.current = null;
+        }
+        if (otherTypingTimeoutRef.current) {
+          clearTimeout(otherTypingTimeoutRef.current);
+          otherTypingTimeoutRef.current = null;
+        }
+        isTypingRef.current = false;
         supabase.removeChannel(messagesChannel);
         supabase.removeChannel(typingChannel);
         typingChannelRef.current = null;
+        setIsOtherTyping(false);
       };
     }
   }, [activeConversation, userProfileId]);
@@ -178,7 +211,11 @@ const Messages = () => {
 
   const sendTypingIndicator = (isTyping: boolean) => {
     if (!typingChannelRef.current || !userProfileId) return;
-    
+
+    // Avoid spamming identical broadcasts
+    if (isTypingRef.current === isTyping) return;
+    isTypingRef.current = isTyping;
+
     typingChannelRef.current.send({
       type: 'broadcast',
       event: 'typing',
@@ -187,25 +224,43 @@ const Messages = () => {
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setNewMessage(e.target.value);
-    
-    // Send typing indicator
+    const value = e.target.value;
+    setNewMessage(value);
+
+    // If the input is empty, immediately stop typing
+    if (!value.trim()) {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = null;
+      }
+      sendTypingIndicator(false);
+      return;
+    }
+
+    // Broadcast typing (no-op if already broadcasting)
     sendTypingIndicator(true);
-    
-    // Clear existing timeout
+
+    // Reset the auto-stop timer
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
-    
-    // Set timeout to stop typing indicator after 2 seconds of inactivity
     typingTimeoutRef.current = setTimeout(() => {
       sendTypingIndicator(false);
+      typingTimeoutRef.current = null;
     }, 2000);
   };
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Final safety net: clear any pending timers if the component unmounts
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      if (otherTypingTimeoutRef.current) clearTimeout(otherTypingTimeoutRef.current);
+    };
+  }, []);
 
   const fetchUserProfile = async () => {
     if (!user) return;
