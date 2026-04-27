@@ -13,6 +13,7 @@ import { Heart, Star, User, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import { calculateCompatibility } from "@/lib/compatibility";
+import { cn } from "@/lib/utils";
 
 interface ProfilePhoto {
   id: string;
