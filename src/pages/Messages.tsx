@@ -76,6 +76,8 @@ const Messages = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const typingChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const otherTypingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isTypingRef = useRef(false);
 
   const { isUserOnline } = usePresence(user?.id || null, userProfileId);
 
@@ -209,7 +211,11 @@ const Messages = () => {
 
   const sendTypingIndicator = (isTyping: boolean) => {
     if (!typingChannelRef.current || !userProfileId) return;
-    
+
+    // Avoid spamming identical broadcasts
+    if (isTypingRef.current === isTyping) return;
+    isTypingRef.current = isTyping;
+
     typingChannelRef.current.send({
       type: 'broadcast',
       event: 'typing',
@@ -218,25 +224,43 @@ const Messages = () => {
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setNewMessage(e.target.value);
-    
-    // Send typing indicator
+    const value = e.target.value;
+    setNewMessage(value);
+
+    // If the input is empty, immediately stop typing
+    if (!value.trim()) {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = null;
+      }
+      sendTypingIndicator(false);
+      return;
+    }
+
+    // Broadcast typing (no-op if already broadcasting)
     sendTypingIndicator(true);
-    
-    // Clear existing timeout
+
+    // Reset the auto-stop timer
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
-    
-    // Set timeout to stop typing indicator after 2 seconds of inactivity
     typingTimeoutRef.current = setTimeout(() => {
       sendTypingIndicator(false);
+      typingTimeoutRef.current = null;
     }, 2000);
   };
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Final safety net: clear any pending timers if the component unmounts
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      if (otherTypingTimeoutRef.current) clearTimeout(otherTypingTimeoutRef.current);
+    };
+  }, []);
 
   const fetchUserProfile = async () => {
     if (!user) return;
