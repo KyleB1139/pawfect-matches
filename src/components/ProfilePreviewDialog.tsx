@@ -59,6 +59,7 @@ interface ProfilePreviewDialogProps {
   showLikeButton?: boolean;
   userProfileId?: string;
   onBlock?: () => void;
+  compatibility?: number;
 }
 
 const ProfilePreviewDialog = ({
@@ -70,6 +71,7 @@ const ProfilePreviewDialog = ({
   showLikeButton = true,
   userProfileId,
   onBlock,
+  compatibility,
 }: ProfilePreviewDialogProps) => {
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [showBlockDialog, setShowBlockDialog] = useState(false);
@@ -248,6 +250,20 @@ const ProfilePreviewDialog = ({
                 {profile.gender && (
                   <Badge variant="secondary" className="text-xs capitalize">
                     {profile.gender === "man" ? "♂ Man" : profile.gender === "woman" ? "♀ Woman" : "Other"}
+                  </Badge>
+                )}
+                {typeof compatibility === "number" && (
+                  <Badge
+                    className={cn(
+                      "ml-auto",
+                      compatibility >= 75
+                        ? "bg-sage/40 text-secondary-foreground border-none"
+                        : compatibility >= 50
+                        ? "bg-accent/40 text-accent-foreground border-none"
+                        : "bg-muted text-muted-foreground border-none"
+                    )}
+                  >
+                    {compatibility}% match
                   </Badge>
                 )}
               </div>
