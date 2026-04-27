@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Heart, Star, User, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
+import { calculateCompatibility } from "@/lib/compatibility";
 
 interface ProfilePhoto {
   id: string;
@@ -36,6 +37,8 @@ interface FullProfile {
   dog_friendly_with: string[] | null;
   looking_for: string[] | null;
   lifestyle: string[] | null;
+  min_age_preference?: number | null;
+  max_age_preference?: number | null;
   photos?: ProfilePhoto[];
 }
 
@@ -44,6 +47,7 @@ interface LikeData {
   created_at: string;
   profile: FullProfile;
   isSuperLike: boolean;
+  compatibility: number;
 }
 
 const LikedYou = () => {
@@ -56,6 +60,7 @@ const LikedYou = () => {
   const [selectedProfile, setSelectedProfile] = useState<FullProfile | null>(null);
   const [selectedIsSuperLike, setSelectedIsSuperLike] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedCompatibility, setSelectedCompatibility] = useState<number>(0);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -90,7 +95,7 @@ const LikedYou = () => {
       // Get user's profile ID
       const { data: userProfile } = await supabase
         .from("profiles")
-        .select("id")
+        .select("id, age, gender, interested_in, min_age_preference, max_age_preference, looking_for, lifestyle, dog_friendly, dog_friendly_with, dog_breed")
         .eq("user_id", user.id)
         .maybeSingle();
 
@@ -142,7 +147,7 @@ const LikedYou = () => {
       // Fetch full profiles for all likers
       const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
-        .select("id, name, age, avatar_url, location, bio, gender, dog_name, dog_breed, dog_age, dog_photo_url, dog_friendly, dog_friendly_with, looking_for, lifestyle")
+        .select("id, name, age, avatar_url, location, bio, gender, dog_name, dog_breed, dog_age, dog_photo_url, dog_friendly, dog_friendly_with, looking_for, lifestyle, min_age_preference, max_age_preference")
         .in("id", likerProfileIds);
 
       if (profilesError) throw profilesError;
@@ -176,6 +181,7 @@ const LikedYou = () => {
             created_at: like.created_at,
             profile: profile as FullProfile,
             isSuperLike: false,
+            compatibility: calculateCompatibility(userProfile, profile as FullProfile),
           });
         }
       });
@@ -189,6 +195,7 @@ const LikedYou = () => {
             created_at: like.created_at,
             profile: profile as FullProfile,
             isSuperLike: true,
+            compatibility: calculateCompatibility(userProfile, profile as FullProfile),
           });
         }
       });
@@ -336,6 +343,7 @@ const LikedYou = () => {
                 onClick={() => {
                   setSelectedProfile(like.profile);
                   setSelectedIsSuperLike(like.isSuperLike);
+                  setSelectedCompatibility(like.compatibility);
                   setDialogOpen(true);
                 }}
               >
@@ -359,6 +367,19 @@ const LikedYou = () => {
                             Super
                           </Badge>
                         )}
+                        <Badge
+                          variant="secondary"
+                          className={cn(
+                            "ml-auto shrink-0",
+                            like.compatibility >= 75
+                              ? "bg-sage/30 text-secondary-foreground"
+                              : like.compatibility >= 50
+                              ? "bg-accent/30 text-accent-foreground"
+                              : "bg-muted text-muted-foreground"
+                          )}
+                        >
+                          {like.compatibility}% match
+                        </Badge>
                       </div>
                       {like.profile.location && (
                         <p className="text-sm text-muted-foreground truncate">
@@ -400,6 +421,7 @@ const LikedYou = () => {
         onLikeBack={() => selectedProfile && handleLikeBack(selectedProfile.id)}
         isSuperLike={selectedIsSuperLike}
         userProfileId={userProfileId || undefined}
+        compatibility={selectedCompatibility}
         onBlock={() => {
           // Remove blocked profile from list
           if (selectedProfile) {
