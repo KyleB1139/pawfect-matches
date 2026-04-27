@@ -124,6 +124,10 @@ const Messages = () => {
             if (newMsg.sender_id !== userProfileId) {
               markMessagesAsRead(activeConversation.id);
               setIsOtherTyping(false); // They sent a message, so they stopped typing
+              if (otherTypingTimeoutRef.current) {
+                clearTimeout(otherTypingTimeoutRef.current);
+                otherTypingTimeoutRef.current = null;
+              }
             }
           }
         )
@@ -149,7 +153,23 @@ const Messages = () => {
         .channel(`typing:${activeConversation.id}`)
         .on('broadcast', { event: 'typing' }, (payload) => {
           if (payload.payload.userId !== userProfileId) {
-            setIsOtherTyping(payload.payload.isTyping);
+            const isTyping = Boolean(payload.payload.isTyping);
+            setIsOtherTyping(isTyping);
+
+            // Clear any pending auto-hide timer
+            if (otherTypingTimeoutRef.current) {
+              clearTimeout(otherTypingTimeoutRef.current);
+              otherTypingTimeoutRef.current = null;
+            }
+
+            // Safety net: auto-hide indicator if no follow-up event arrives
+            // (e.g. sender's tab closed, lost connection, missed "stop" event)
+            if (isTyping) {
+              otherTypingTimeoutRef.current = setTimeout(() => {
+                setIsOtherTyping(false);
+                otherTypingTimeoutRef.current = null;
+              }, 5000);
+            }
           }
         })
         .subscribe();
@@ -157,9 +177,20 @@ const Messages = () => {
       typingChannelRef.current = typingChannel;
 
       return () => {
+        // Stop any local typing broadcast before tearing down the channel
+        if (typingTimeoutRef.current) {
+          clearTimeout(typingTimeoutRef.current);
+          typingTimeoutRef.current = null;
+        }
+        if (otherTypingTimeoutRef.current) {
+          clearTimeout(otherTypingTimeoutRef.current);
+          otherTypingTimeoutRef.current = null;
+        }
+        isTypingRef.current = false;
         supabase.removeChannel(messagesChannel);
         supabase.removeChannel(typingChannel);
         typingChannelRef.current = null;
+        setIsOtherTyping(false);
       };
     }
   }, [activeConversation, userProfileId]);
