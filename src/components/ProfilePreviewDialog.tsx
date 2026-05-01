@@ -19,7 +19,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Heart, Star, MapPin, Dog, ChevronLeft, ChevronRight, MoreVertical, Ban } from "lucide-react";
+import { Heart, Star, MapPin, Dog, ChevronLeft, ChevronRight, MoreVertical, Ban, Briefcase, GraduationCap, Ruler, Wine, Cigarette, Baby, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -47,6 +47,14 @@ interface ProfilePreviewData {
   dog_friendly_with?: string[] | null;
   looking_for?: string[] | null;
   lifestyle?: string[] | null;
+  occupation?: string | null;
+  education?: string | null;
+  height_cm?: number | null;
+  drinking?: string | null;
+  smoking?: string | null;
+  has_kids?: string | null;
+  wants_kids?: string | null;
+  interests?: string[] | null;
   photos?: ProfilePhoto[];
 }
 
