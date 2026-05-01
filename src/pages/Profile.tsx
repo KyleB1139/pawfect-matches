@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import Navigation from "@/components/Navigation";
 import { PhotoGallery } from "@/components/PhotoGallery";
-import { Dog, Camera, Save, Settings, X, Heart, ThumbsDown, Users, MapPin, CheckCircle } from "lucide-react";
+import { Dog, Camera, Save, Settings, X, Heart, ThumbsDown, Users, MapPin, CheckCircle, Briefcase, GraduationCap, Ruler, Wine, Cigarette, Baby, Sparkles } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 const dogBreeds = [
@@ -23,6 +23,12 @@ const dogBreeds = [
 const friendlyOptions = ["Small dogs", "Large dogs", "Cats", "Children", "Everyone"];
 const lookingForOptions = ["Long-term relationship", "Casual dating", "Friendship", "Dog playdates", "Open to anything"];
 const lifestyleOptions = ["Active & outdoorsy", "Homebody", "Social butterfly", "Adventurous", "Laid-back", "Fitness enthusiast", "Night owl", "Early bird"];
+const educationOptions = ["High school", "Some college", "Bachelor's", "Master's", "PhD", "Trade school", "Prefer not to say"];
+const drinkingOptions = ["Never", "Socially", "Regularly", "Prefer not to say"];
+const smokingOptions = ["Never", "Socially", "Regularly", "Trying to quit", "Prefer not to say"];
+const kidsOptions = ["No", "Yes", "Prefer not to say"];
+const wantsKidsOptions = ["Want kids", "Don't want kids", "Open to it", "Not sure"];
+const interestOptions = ["Hiking", "Travel", "Cooking", "Coffee", "Wine", "Music", "Art", "Movies", "Reading", "Yoga", "Gym", "Running", "Photography", "Gaming", "Foodie", "Beach"];
 
 const Profile = () => {
   const { user, loading } = useAuth();
@@ -61,6 +67,14 @@ const Profile = () => {
     lifestyle: [] as string[],
     min_age_preference: "" as string,
     max_age_preference: "" as string,
+    occupation: "",
+    education: "",
+    height_cm: "",
+    drinking: "",
+    smoking: "",
+    has_kids: "",
+    wants_kids: "",
+    interests: [] as string[],
   });
 
   useEffect(() => {
@@ -161,6 +175,14 @@ const Profile = () => {
         lifestyle: data.lifestyle || [],
         min_age_preference: data.min_age_preference?.toString() || "",
         max_age_preference: data.max_age_preference?.toString() || "",
+        occupation: (data as any).occupation || "",
+        education: (data as any).education || "",
+        height_cm: (data as any).height_cm?.toString() || "",
+        drinking: (data as any).drinking || "",
+        smoking: (data as any).smoking || "",
+        has_kids: (data as any).has_kids || "",
+        wants_kids: (data as any).wants_kids || "",
+        interests: (data as any).interests || [],
       });
       
       // Check if user has location coordinates
@@ -302,7 +324,15 @@ const Profile = () => {
           lifestyle: profile.lifestyle,
           min_age_preference: profile.min_age_preference ? parseInt(profile.min_age_preference) : null,
           max_age_preference: profile.max_age_preference ? parseInt(profile.max_age_preference) : null,
-        })
+          occupation: profile.occupation || null,
+          education: profile.education || null,
+          height_cm: profile.height_cm ? parseInt(profile.height_cm) : null,
+          drinking: profile.drinking || null,
+          smoking: profile.smoking || null,
+          has_kids: profile.has_kids || null,
+          wants_kids: profile.wants_kids || null,
+          interests: profile.interests,
+        } as any)
         .eq("user_id", user.id);
       
       if (error) throw error;
