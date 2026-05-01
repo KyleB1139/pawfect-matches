@@ -292,6 +292,75 @@ const ProfilePreviewDialog = ({
                 </div>
               )}
 
+              {/* Quick Facts */}
+              {(profile.occupation || profile.education || profile.height_cm ||
+                profile.drinking || profile.smoking || profile.has_kids ||
+                profile.wants_kids) && (
+                <div className="mb-4">
+                  <h3 className="text-sm font-semibold mb-2">Quick Facts</h3>
+                  <div className="grid grid-cols-2 gap-2">
+                    {profile.occupation && (
+                      <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
+                        <Briefcase className="w-4 h-4 text-primary shrink-0" />
+                        <span className="text-xs truncate">{profile.occupation}</span>
+                      </div>
+                    )}
+                    {profile.height_cm && (
+                      <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
+                        <Ruler className="w-4 h-4 text-primary shrink-0" />
+                        <span className="text-xs">{profile.height_cm} cm</span>
+                      </div>
+                    )}
+                    {profile.education && (
+                      <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
+                        <GraduationCap className="w-4 h-4 text-primary shrink-0" />
+                        <span className="text-xs truncate">{profile.education}</span>
+                      </div>
+                    )}
+                    {profile.drinking && (
+                      <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
+                        <Wine className="w-4 h-4 text-primary shrink-0" />
+                        <span className="text-xs truncate">{profile.drinking}</span>
+                      </div>
+                    )}
+                    {profile.smoking && (
+                      <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
+                        <Cigarette className="w-4 h-4 text-primary shrink-0" />
+                        <span className="text-xs truncate">{profile.smoking}</span>
+                      </div>
+                    )}
+                    {profile.has_kids && (
+                      <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
+                        <Baby className="w-4 h-4 text-primary shrink-0" />
+                        <span className="text-xs truncate">Kids: {profile.has_kids}</span>
+                      </div>
+                    )}
+                    {profile.wants_kids && (
+                      <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
+                        <Heart className="w-4 h-4 text-primary shrink-0" />
+                        <span className="text-xs truncate">Wants: {profile.wants_kids}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Interests */}
+              {profile.interests && profile.interests.length > 0 && (
+                <div className="mb-4">
+                  <h3 className="text-sm font-semibold mb-2 flex items-center gap-1.5">
+                    <Sparkles className="w-4 h-4" /> Interests
+                  </h3>
+                  <div className="flex flex-wrap gap-1.5">
+                    {profile.interests.map((item) => (
+                      <Badge key={item} variant="secondary" className="text-xs">
+                        {item}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Looking For */}
               {profile.looking_for && profile.looking_for.length > 0 && (
                 <div className="mb-4">
