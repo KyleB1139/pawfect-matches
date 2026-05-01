@@ -38,6 +38,14 @@ export interface ProfileData {
   longitude?: number | null;
   looking_for?: string[] | null;
   lifestyle?: string[] | null;
+  occupation?: string | null;
+  education?: string | null;
+  height_cm?: number | null;
+  drinking?: string | null;
+  smoking?: string | null;
+  has_kids?: string | null;
+  wants_kids?: string | null;
+  interests?: string[] | null;
   photos?: ProfilePhoto[];
 }
 
