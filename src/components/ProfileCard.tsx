@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Heart, X, Star, MapPin, Dog, Navigation, ChevronLeft, ChevronRight } from "lucide-react";
+import { Heart, X, Star, MapPin, Dog, Navigation, ChevronLeft, ChevronRight, Briefcase, Ruler, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ProfileData } from "@/pages/Discover";
@@ -195,6 +195,42 @@ const ProfileCard = ({ profile, onLike, onNope, onSuperLike, superLikesRemaining
             >
               {profile.bio}
             </p>
+          )}
+
+          {/* Quick facts row (always visible if any present) */}
+          {(profile.occupation || profile.height_cm || profile.education) && (
+            <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-xs text-primary-foreground/85">
+              {profile.occupation && (
+                <span className="flex items-center gap-1">
+                  <Briefcase className="w-3 h-3" /> {profile.occupation}
+                </span>
+              )}
+              {profile.height_cm && (
+                <span className="flex items-center gap-1">
+                  <Ruler className="w-3 h-3" /> {profile.height_cm} cm
+                </span>
+              )}
+              {profile.education && (
+                <span className="flex items-center gap-1">
+                  <GraduationCap className="w-3 h-3" /> {profile.education}
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* Interests (when expanded) */}
+          {showDetails && profile.interests && profile.interests.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-3">
+              {profile.interests.slice(0, 8).map((interest) => (
+                <Badge
+                  key={interest}
+                  variant="info"
+                  className="text-xs bg-background/20 text-primary-foreground/90"
+                >
+                  {interest}
+                </Badge>
+              ))}
+            </div>
           )}
 
           {/* Dog Details (expandable) */}
