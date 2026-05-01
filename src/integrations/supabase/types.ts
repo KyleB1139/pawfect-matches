@@ -321,9 +321,14 @@ export type Database = {
           dog_friendly_with: string[] | null
           dog_name: string | null
           dog_photo_url: string | null
+          drinking: string | null
+          education: string | null
           gender: string | null
+          has_kids: string | null
+          height_cm: number | null
           id: string
           interested_in: string[] | null
+          interests: string[] | null
           last_seen: string | null
           latitude: number | null
           lifestyle: string[] | null
@@ -333,9 +338,12 @@ export type Database = {
           max_age_preference: number | null
           min_age_preference: number | null
           name: string
+          occupation: string | null
+          smoking: string | null
           terms_accepted_at: string | null
           updated_at: string
           user_id: string
+          wants_kids: string | null
         }
         Insert: {
           age?: number | null
@@ -350,9 +358,14 @@ export type Database = {
           dog_friendly_with?: string[] | null
           dog_name?: string | null
           dog_photo_url?: string | null
+          drinking?: string | null
+          education?: string | null
           gender?: string | null
+          has_kids?: string | null
+          height_cm?: number | null
           id?: string
           interested_in?: string[] | null
+          interests?: string[] | null
           last_seen?: string | null
           latitude?: number | null
           lifestyle?: string[] | null
@@ -362,9 +375,12 @@ export type Database = {
           max_age_preference?: number | null
           min_age_preference?: number | null
           name: string
+          occupation?: string | null
+          smoking?: string | null
           terms_accepted_at?: string | null
           updated_at?: string
           user_id: string
+          wants_kids?: string | null
         }
         Update: {
           age?: number | null
@@ -379,9 +395,14 @@ export type Database = {
           dog_friendly_with?: string[] | null
           dog_name?: string | null
           dog_photo_url?: string | null
+          drinking?: string | null
+          education?: string | null
           gender?: string | null
+          has_kids?: string | null
+          height_cm?: number | null
           id?: string
           interested_in?: string[] | null
+          interests?: string[] | null
           last_seen?: string | null
           latitude?: number | null
           lifestyle?: string[] | null
@@ -391,9 +412,12 @@ export type Database = {
           max_age_preference?: number | null
           min_age_preference?: number | null
           name?: string
+          occupation?: string | null
+          smoking?: string | null
           terms_accepted_at?: string | null
           updated_at?: string
           user_id?: string
+          wants_kids?: string | null
         }
         Relationships: []
       }
