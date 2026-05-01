@@ -529,7 +529,140 @@ const Profile = () => {
                 rows={3}
               />
             </div>
-            
+
+            {/* New About Me Fields */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="occupation" className="flex items-center gap-1.5">
+                  <Briefcase className="w-3.5 h-3.5" /> Occupation
+                </Label>
+                <Input
+                  id="occupation"
+                  value={profile.occupation}
+                  onChange={(e) => setProfile(p => ({ ...p, occupation: e.target.value }))}
+                  placeholder="e.g. Designer"
+                />
+              </div>
+              <div>
+                <Label htmlFor="height" className="flex items-center gap-1.5">
+                  <Ruler className="w-3.5 h-3.5" /> Height (cm)
+                </Label>
+                <Input
+                  id="height"
+                  type="number"
+                  value={profile.height_cm}
+                  onChange={(e) => setProfile(p => ({ ...p, height_cm: e.target.value }))}
+                  placeholder="175"
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="education" className="flex items-center gap-1.5">
+                <GraduationCap className="w-3.5 h-3.5" /> Education
+              </Label>
+              <select
+                id="education"
+                value={profile.education}
+                onChange={(e) => setProfile(p => ({ ...p, education: e.target.value }))}
+                className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                <option value="">Select...</option>
+                {educationOptions.map(o => <option key={o} value={o}>{o}</option>)}
+              </select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="drinking" className="flex items-center gap-1.5">
+                  <Wine className="w-3.5 h-3.5" /> Drinking
+                </Label>
+                <select
+                  id="drinking"
+                  value={profile.drinking}
+                  onChange={(e) => setProfile(p => ({ ...p, drinking: e.target.value }))}
+                  className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="">Select...</option>
+                  {drinkingOptions.map(o => <option key={o} value={o}>{o}</option>)}
+                </select>
+              </div>
+              <div>
+                <Label htmlFor="smoking" className="flex items-center gap-1.5">
+                  <Cigarette className="w-3.5 h-3.5" /> Smoking
+                </Label>
+                <select
+                  id="smoking"
+                  value={profile.smoking}
+                  onChange={(e) => setProfile(p => ({ ...p, smoking: e.target.value }))}
+                  className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="">Select...</option>
+                  {smokingOptions.map(o => <option key={o} value={o}>{o}</option>)}
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="has_kids" className="flex items-center gap-1.5">
+                  <Baby className="w-3.5 h-3.5" /> Have kids
+                </Label>
+                <select
+                  id="has_kids"
+                  value={profile.has_kids}
+                  onChange={(e) => setProfile(p => ({ ...p, has_kids: e.target.value }))}
+                  className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="">Select...</option>
+                  {kidsOptions.map(o => <option key={o} value={o}>{o}</option>)}
+                </select>
+              </div>
+              <div>
+                <Label htmlFor="wants_kids" className="flex items-center gap-1.5">
+                  <Heart className="w-3.5 h-3.5" /> Want kids
+                </Label>
+                <select
+                  id="wants_kids"
+                  value={profile.wants_kids}
+                  onChange={(e) => setProfile(p => ({ ...p, wants_kids: e.target.value }))}
+                  className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="">Select...</option>
+                  {wantsKidsOptions.map(o => <option key={o} value={o}>{o}</option>)}
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <Label className="flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5" /> Interests & Hobbies
+              </Label>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {interestOptions.map((option) => (
+                  <Badge
+                    key={option}
+                    variant={profile.interests.includes(option) ? "default" : "outline"}
+                    className="cursor-pointer"
+                    onClick={() => {
+                      setProfile(prev => ({
+                        ...prev,
+                        interests: prev.interests.includes(option)
+                          ? prev.interests.filter(o => o !== option)
+                          : [...prev.interests, option]
+                      }));
+                    }}
+                  >
+                    {option}
+                    {profile.interests.includes(option) && (
+                      <X className="w-3 h-3 ml-1" />
+                    )}
+                  </Badge>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">Pick what you love beyond the dog park</p>
+            </div>
+
             {/* Gender Selection */}
             <div>
               <Label htmlFor="gender">I am a</Label>
