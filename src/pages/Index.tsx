@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Dog, Heart, Users, Sparkles, LogIn } from "lucide-react";
+import { Dog, Heart, Users, Sparkles, LogIn, Coffee, MapPin } from "lucide-react";
 import heroImage from "@/assets/hero-image.jpg";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -53,20 +53,23 @@ const Index = () => {
           </div>
 
           {/* Tagline */}
-          <p className="text-xl md:text-2xl text-primary-foreground/90 mb-8 font-medium">
-            Where dog lovers find their perfect match
+          <p className="text-2xl md:text-4xl text-primary-foreground mb-4 font-display font-bold leading-tight">
+            Dating for people who love their dogs
+          </p>
+          <p className="text-base md:text-lg text-primary-foreground/80 mb-8 max-w-xl mx-auto">
+            Meet someone who gets it — the early walks, the muddy paws, the unconditional love. Real connections between humans, with a shared love for dogs.
           </p>
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
-            <Link to="/discover">
+            <Link to={user ? "/discover" : "/auth"}>
               <Button variant="hero" size="xl" className="w-full sm:w-auto">
                 <Heart className="w-5 h-5 mr-2" />
-                Start Swiping
+                Find your person
               </Button>
             </Link>
             <Button variant="outline" size="xl" className="w-full sm:w-auto border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground">
-              Learn More
+              How it works
             </Button>
           </div>
 
@@ -74,15 +77,15 @@ const Index = () => {
           <div className="grid grid-cols-3 gap-6 text-primary-foreground/80">
             <div>
               <p className="font-display text-3xl font-bold text-primary-foreground">50K+</p>
-              <p className="text-sm">Dog Lovers</p>
+              <p className="text-sm">Singles</p>
             </div>
             <div>
               <p className="font-display text-3xl font-bold text-primary-foreground">15K+</p>
               <p className="text-sm">Matches Made</p>
             </div>
             <div>
-              <p className="font-display text-3xl font-bold text-primary-foreground">100+</p>
-              <p className="text-sm">Dog Breeds</p>
+              <p className="font-display text-3xl font-bold text-primary-foreground">2K+</p>
+              <p className="text-sm">First Dates</p>
             </div>
           </div>
         </div>
@@ -99,43 +102,43 @@ const Index = () => {
       <section className="py-20 px-6 bg-card">
         <div className="max-w-4xl mx-auto">
           <h2 className="font-display text-4xl font-bold text-center mb-4">
-            How <span className="text-gradient">fetch</span> Works
+            Dating, with a <span className="text-gradient">shared love</span>
           </h2>
           <p className="text-muted-foreground text-center mb-12 max-w-xl mx-auto">
-            Find someone who loves dogs as much as you do. Our app makes it easy to connect with fellow dog parents.
+            Fetch is a dating app for people, not pets. Your dog is just the best icebreaker you'll ever have.
           </p>
 
           <div className="grid md:grid-cols-3 gap-8">
             {/* Feature 1 */}
             <div className="text-center p-6 rounded-2xl bg-background shadow-card hover:shadow-card-hover transition-shadow">
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
-                <Dog className="w-8 h-8 text-primary" />
+                <Heart className="w-8 h-8 text-primary" />
               </div>
-              <h3 className="font-display text-xl font-bold mb-2">Show Off Your Pup</h3>
+              <h3 className="font-display text-xl font-bold mb-2">Real Connections</h3>
               <p className="text-muted-foreground text-sm">
-                Create a profile featuring you and your furry best friend. Share your dog's breed and personality.
+                Share who you are — your lifestyle, what you're looking for, and the values that matter. Then add your pup to the picture.
               </p>
             </div>
 
             {/* Feature 2 */}
             <div className="text-center p-6 rounded-2xl bg-background shadow-card hover:shadow-card-hover transition-shadow">
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-sage/30 flex items-center justify-center">
-                <Users className="w-8 h-8 text-secondary-foreground" />
+                <Coffee className="w-8 h-8 text-secondary-foreground" />
               </div>
-              <h3 className="font-display text-xl font-bold mb-2">Find Compatible Dogs</h3>
+              <h3 className="font-display text-xl font-bold mb-2">Skip the Small Talk</h3>
               <p className="text-muted-foreground text-sm">
-                See if your dogs are compatible! We show breed info and whether they get along with other pups.
+                No more "what do you do for fun?" You both already love long walks, dog parks, and weekend adventures.
               </p>
             </div>
 
             {/* Feature 3 */}
             <div className="text-center p-6 rounded-2xl bg-background shadow-card hover:shadow-card-hover transition-shadow">
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-golden/20 flex items-center justify-center">
-                <Sparkles className="w-8 h-8 text-accent" />
+                <MapPin className="w-8 h-8 text-accent" />
               </div>
-              <h3 className="font-display text-xl font-bold mb-2">Plan Dog Dates</h3>
+              <h3 className="font-display text-xl font-bold mb-2">Date Locally</h3>
               <p className="text-muted-foreground text-sm">
-                Match, chat, and plan the perfect dog park date. Double the love, double the fun!
+                Match with people nearby and turn coffee dates into park dates. Your dog approves the vibe before you do.
               </p>
             </div>
           </div>
@@ -146,14 +149,14 @@ const Index = () => {
       <section className="py-20 px-6 bg-gradient-hero">
         <div className="max-w-2xl mx-auto text-center">
           <h2 className="font-display text-4xl font-bold text-primary-foreground mb-4">
-            Ready to Find Your Pack?
+            Your next great date starts with a wag
           </h2>
           <p className="text-primary-foreground/80 mb-8">
-            Join thousands of dog lovers who've found love through fetch.
+            Join thousands of singles who've found love — with a four-legged co-pilot.
           </p>
-          <Link to="/discover">
+          <Link to={user ? "/discover" : "/auth"}>
             <Button size="xl" className="bg-background text-foreground hover:bg-background/90">
-              Get Started Free
+              Create Your Profile
             </Button>
           </Link>
         </div>
