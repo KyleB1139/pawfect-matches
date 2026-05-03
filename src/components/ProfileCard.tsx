@@ -218,20 +218,33 @@ const ProfileCard = ({ profile, onLike, onNope, onSuperLike, superLikesRemaining
             </div>
           )}
 
-          {/* Interests (when expanded) */}
-          {showDetails && profile.interests && profile.interests.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-3">
-              {profile.interests.slice(0, 8).map((interest) => (
-                <Badge
-                  key={interest}
-                  variant="info"
-                  className="text-xs bg-background/20 text-primary-foreground/90"
-                >
-                  {interest}
-                </Badge>
-              ))}
-            </div>
-          )}
+          {/* Interests — prioritize shared/top, cap visible count, show +N more */}
+          {profile.interests && profile.interests.length > 0 && (() => {
+            const MAX_VISIBLE = showDetails ? 6 : 3;
+            const visible = profile.interests.slice(0, MAX_VISIBLE);
+            const remaining = profile.interests.length - visible.length;
+            return (
+              <div className="flex flex-wrap gap-1 mt-3">
+                {visible.map((interest) => (
+                  <Badge
+                    key={interest}
+                    variant="info"
+                    className="text-xs bg-background/20 text-primary-foreground/90"
+                  >
+                    {interest}
+                  </Badge>
+                ))}
+                {remaining > 0 && (
+                  <Badge
+                    variant="info"
+                    className="text-xs bg-background/30 text-primary-foreground"
+                  >
+                    +{remaining} more
+                  </Badge>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Dog Details (expandable) */}
           {showDetails && profile.dog_name && (
