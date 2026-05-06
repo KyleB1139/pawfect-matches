@@ -248,14 +248,14 @@ const ProfileCard = ({ profile, onLike, onNope, onSuperLike, superLikesRemaining
 
           {/* Dog Details (expandable) */}
           {showDetails && profile.dog_name && (
-            <div className="mt-4 p-3 bg-background/10 backdrop-blur-sm rounded-xl">
-              <p className="font-semibold text-sm mb-2">
+            <div className="mt-3 p-2.5 sm:p-3 bg-background/10 backdrop-blur-sm rounded-xl">
+              <p className="font-semibold text-sm mb-1.5">
                 🐕 {profile.dog_name} {profile.dog_age ? `• ${profile.dog_age} years old` : ""}
               </p>
               {profile.dog_friendly_with && profile.dog_friendly_with.length > 0 && (
-                <div className="flex flex-wrap gap-1">
+                <div className="flex flex-wrap gap-0.5">
                   {profile.dog_friendly_with.map((type) => (
-                    <Badge key={type} variant="info" className="text-xs bg-background/20 text-primary-foreground/90">
+                    <Badge key={type} variant="info" className="text-[10px] sm:text-xs bg-background/20 text-primary-foreground/90 px-2 py-0.5">
                       {type}
                     </Badge>
                   ))}
