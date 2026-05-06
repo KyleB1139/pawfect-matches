@@ -224,12 +224,12 @@ const ProfileCard = ({ profile, onLike, onNope, onSuperLike, superLikesRemaining
             const visible = profile.interests.slice(0, MAX_VISIBLE);
             const remaining = profile.interests.length - visible.length;
             return (
-              <div className="flex flex-wrap gap-1 mt-3">
+              <div className="flex flex-wrap gap-0.5 mt-1.5">
                 {visible.map((interest) => (
                   <Badge
                     key={interest}
                     variant="info"
-                    className="text-xs bg-background/20 text-primary-foreground/90"
+                    className="text-[10px] sm:text-xs bg-background/20 text-primary-foreground/90 px-2 py-0.5"
                   >
                     {interest}
                   </Badge>
@@ -237,7 +237,7 @@ const ProfileCard = ({ profile, onLike, onNope, onSuperLike, superLikesRemaining
                 {remaining > 0 && (
                   <Badge
                     variant="info"
-                    className="text-xs bg-background/30 text-primary-foreground"
+                    className="text-[10px] sm:text-xs bg-background/30 text-primary-foreground px-2 py-0.5"
                   >
                     +{remaining} more
                   </Badge>
