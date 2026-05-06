@@ -170,7 +170,7 @@ const ProfileCard = ({ profile, onLike, onNope, onSuperLike, superLikesRemaining
           </div>
 
           {/* Location & Distance */}
-          <div className="flex items-center gap-3 text-primary-foreground/80 mb-3">
+          <div className="flex items-center gap-3 text-primary-foreground/80 mb-2">
             {profile.location && (
               <div className="flex items-center gap-1">
                 <MapPin className="w-4 h-4" />
