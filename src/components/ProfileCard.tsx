@@ -143,7 +143,7 @@ const ProfileCard = ({ profile, onLike, onNope, onSuperLike, superLikesRemaining
         )}
 
         {/* Content */}
-        <div className="absolute bottom-0 left-0 right-0 p-6 text-primary-foreground">
+        <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 text-primary-foreground max-h-[58%] overflow-y-auto scrollbar-hide">
           {/* Dog Breed Badge */}
           <div className="flex items-center gap-2 mb-3">
             {profile.dog_breed && (
