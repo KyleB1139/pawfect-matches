@@ -143,17 +143,17 @@ const ProfileCard = ({ profile, onLike, onNope, onSuperLike, superLikesRemaining
         )}
 
         {/* Content */}
-        <div className="absolute bottom-0 left-0 right-0 p-6 text-primary-foreground">
+        <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 text-primary-foreground max-h-[58%] overflow-y-auto scrollbar-hide">
           {/* Dog Breed Badge */}
-          <div className="flex items-center gap-2 mb-3">
+          <div className="flex items-center gap-2 mb-2">
             {profile.dog_breed && (
-              <Badge variant="breed" className="flex items-center gap-1">
+              <Badge variant="breed" className="flex items-center gap-1 text-[10px] sm:text-xs px-2 py-0.5">
                 <Dog className="w-3 h-3" />
                 {profile.dog_breed}
               </Badge>
             )}
             {profile.dog_friendly && (
-              <Badge variant="friendly">Dog Friendly</Badge>
+              <Badge variant="friendly" className="text-[10px] sm:text-xs px-2 py-0.5">Dog Friendly</Badge>
             )}
           </div>
 
@@ -170,7 +170,7 @@ const ProfileCard = ({ profile, onLike, onNope, onSuperLike, superLikesRemaining
           </div>
 
           {/* Location & Distance */}
-          <div className="flex items-center gap-3 text-primary-foreground/80 mb-3">
+          <div className="flex items-center gap-3 text-primary-foreground/80 mb-2">
             {profile.location && (
               <div className="flex items-center gap-1">
                 <MapPin className="w-4 h-4" />
@@ -199,7 +199,7 @@ const ProfileCard = ({ profile, onLike, onNope, onSuperLike, superLikesRemaining
 
           {/* Quick facts row (always visible if any present) */}
           {(profile.occupation || profile.height_cm || profile.education) && (
-            <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-xs text-primary-foreground/85">
+            <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1.5 text-xs text-primary-foreground/85">
               {profile.occupation && (
                 <span className="flex items-center gap-1">
                   <Briefcase className="w-3 h-3" /> {profile.occupation}
@@ -224,12 +224,12 @@ const ProfileCard = ({ profile, onLike, onNope, onSuperLike, superLikesRemaining
             const visible = profile.interests.slice(0, MAX_VISIBLE);
             const remaining = profile.interests.length - visible.length;
             return (
-              <div className="flex flex-wrap gap-1 mt-3">
+              <div className="flex flex-wrap gap-0.5 mt-1.5">
                 {visible.map((interest) => (
                   <Badge
                     key={interest}
                     variant="info"
-                    className="text-xs bg-background/20 text-primary-foreground/90"
+                    className="text-[10px] sm:text-xs bg-background/20 text-primary-foreground/90 px-2 py-0.5"
                   >
                     {interest}
                   </Badge>
@@ -237,7 +237,7 @@ const ProfileCard = ({ profile, onLike, onNope, onSuperLike, superLikesRemaining
                 {remaining > 0 && (
                   <Badge
                     variant="info"
-                    className="text-xs bg-background/30 text-primary-foreground"
+                    className="text-[10px] sm:text-xs bg-background/30 text-primary-foreground px-2 py-0.5"
                   >
                     +{remaining} more
                   </Badge>
@@ -248,14 +248,14 @@ const ProfileCard = ({ profile, onLike, onNope, onSuperLike, superLikesRemaining
 
           {/* Dog Details (expandable) */}
           {showDetails && profile.dog_name && (
-            <div className="mt-4 p-3 bg-background/10 backdrop-blur-sm rounded-xl">
-              <p className="font-semibold text-sm mb-2">
+            <div className="mt-3 p-2.5 sm:p-3 bg-background/10 backdrop-blur-sm rounded-xl">
+              <p className="font-semibold text-sm mb-1.5">
                 🐕 {profile.dog_name} {profile.dog_age ? `• ${profile.dog_age} years old` : ""}
               </p>
               {profile.dog_friendly_with && profile.dog_friendly_with.length > 0 && (
-                <div className="flex flex-wrap gap-1">
+                <div className="flex flex-wrap gap-0.5">
                   {profile.dog_friendly_with.map((type) => (
-                    <Badge key={type} variant="info" className="text-xs bg-background/20 text-primary-foreground/90">
+                    <Badge key={type} variant="info" className="text-[10px] sm:text-xs bg-background/20 text-primary-foreground/90 px-2 py-0.5">
                       {type}
                     </Badge>
                   ))}
