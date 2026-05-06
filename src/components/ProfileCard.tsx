@@ -199,7 +199,7 @@ const ProfileCard = ({ profile, onLike, onNope, onSuperLike, superLikesRemaining
 
           {/* Quick facts row (always visible if any present) */}
           {(profile.occupation || profile.height_cm || profile.education) && (
-            <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-xs text-primary-foreground/85">
+            <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1.5 text-xs text-primary-foreground/85">
               {profile.occupation && (
                 <span className="flex items-center gap-1">
                   <Briefcase className="w-3 h-3" /> {profile.occupation}
