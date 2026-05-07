@@ -751,7 +751,7 @@ const Discover = () => {
       {/* Header */}
       <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="max-w-md mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="font-display text-2xl font-bold text-gradient">fetch</h1>
+          <h1 className="font-display text-2xl font-bold text-gradient">pawfect</h1>
           <MatchFiltersComponent
             filters={filters}
             onFiltersChange={setFilters}

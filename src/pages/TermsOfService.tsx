@@ -64,7 +64,7 @@ const TermsOfService = () => {
     }
     
     toast({
-      title: "Welcome to Fetch!",
+      title: "Welcome to Pawfect Match!",
       description: "Thank you for agreeing to our terms.",
     });
     
@@ -84,10 +84,10 @@ const TermsOfService = () => {
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="font-display text-3xl font-bold text-gradient mb-2">fetch</h1>
+          <h1 className="font-display text-3xl font-bold text-gradient mb-2">pawfect</h1>
           <h2 className="text-2xl font-semibold text-foreground">Terms of Service & Privacy Policy</h2>
           <p className="text-muted-foreground mt-2">
-            Please review and accept our terms to continue using Fetch
+            Please review and accept our terms to continue using Pawfect Match
           </p>
         </div>
 
@@ -113,13 +113,13 @@ const TermsOfService = () => {
                     1. Introduction and Acceptance
                   </h3>
                   <p className="mb-2">
-                    Welcome to Fetch ("the App," "we," "us," or "our"). By creating an account, accessing, or using our dating application designed for dog owners and dog lovers, you agree to be bound by these Terms of Service ("Terms") and our Privacy Policy.
+                    Welcome to Pawfect Match ("the App," "we," "us," or "our"). By creating an account, accessing, or using our dating application designed for dog owners and dog lovers, you agree to be bound by these Terms of Service ("Terms") and our Privacy Policy.
                   </p>
                   <p className="mb-2">
                     If you do not agree to these Terms, you must not access or use the App. We reserve the right to modify these Terms at any time. Continued use of the App after any modifications indicates your acceptance of the updated Terms.
                   </p>
                   <p>
-                    You must be at least 18 years of age to use this App. By using Fetch, you represent and warrant that you are at least 18 years old and have the legal capacity to enter into these Terms.
+                    You must be at least 18 years of age to use this App. By using Pawfect Match, you represent and warrant that you are at least 18 years old and have the legal capacity to enter into these Terms.
                   </p>
                 </section>
 
@@ -167,7 +167,7 @@ const TermsOfService = () => {
                     3. Location Services and Tracking
                   </h3>
                   <p className="mb-2">
-                    Fetch uses location services to provide distance-based matching features. When you enable location services, we collect your precise GPS coordinates to:
+                    Pawfect Match uses location services to provide distance-based matching features. When you enable location services, we collect your precise GPS coordinates to:
                   </p>
                   <ul className="list-disc pl-5 space-y-1 mb-3">
                     <li>Show you profiles of users near your location</li>
@@ -189,7 +189,7 @@ const TermsOfService = () => {
                     <Users className="w-4 h-4 text-primary" />
                     4. User Conduct and Community Guidelines
                   </h3>
-                  <p className="mb-2">By using Fetch, you agree to:</p>
+                  <p className="mb-2">By using Pawfect Match, you agree to:</p>
                   <ul className="list-disc pl-5 space-y-1 mb-3">
                     <li>Provide accurate and truthful information in your profile</li>
                     <li>Use only your own photos and not impersonate others</li>
@@ -233,7 +233,7 @@ const TermsOfService = () => {
                   </h3>
                   <p className="mb-2">We may share your information with:</p>
                   <ul className="list-disc pl-5 space-y-1 mb-3">
-                    <li><strong>Other Users:</strong> Your profile information is visible to other Fetch users</li>
+                    <li><strong>Other Users:</strong> Your profile information is visible to other Pawfect Match users</li>
                     <li><strong>Service Providers:</strong> Third parties who help us operate the App (hosting, analytics, customer support)</li>
                     <li><strong>Legal Requirements:</strong> When required by law, court order, or government request</li>
                     <li><strong>Safety:</strong> To protect the rights, property, or safety of our users</li>
@@ -250,7 +250,7 @@ const TermsOfService = () => {
                     <Bell className="w-4 h-4 text-primary" />
                     7. Communications and Notifications
                   </h3>
-                  <p className="mb-2">By using Fetch, you agree to receive:</p>
+                  <p className="mb-2">By using Pawfect Match, you agree to receive:</p>
                   <ul className="list-disc pl-5 space-y-1 mb-3">
                     <li>Push notifications about matches, messages, and likes</li>
                     <li>Email communications about your account and important updates</li>
@@ -393,7 +393,7 @@ const TermsOfService = () => {
                 {isSubmitting ? (
                   <Dog className="w-5 h-5 animate-spin" />
                 ) : (
-                  "I Agree - Continue to Fetch"
+                  "I Agree - Continue to Pawfect Match"
                 )}
               </Button>
 
