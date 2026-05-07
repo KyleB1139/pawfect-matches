@@ -129,7 +129,7 @@ const Auth = () => {
           }
         } else {
           toast({
-            title: "Welcome to Fetch! 🐕",
+            title: "Welcome to Pawfect Match! 🐕",
             description: "Let's set up your profile.",
           });
           navigate("/onboarding");
@@ -324,7 +324,7 @@ const Auth = () => {
           <div className="text-center mb-8">
             <div className="flex items-center justify-center gap-2 mb-4">
               <Dog className="w-10 h-10 text-primary-foreground" />
-              <h1 className="font-display text-4xl font-bold text-primary-foreground">fetch</h1>
+              <h1 className="font-display text-4xl font-bold text-primary-foreground">pawfect</h1>
             </div>
             <p className="text-primary-foreground/80">{getTitle()}</p>
           </div>

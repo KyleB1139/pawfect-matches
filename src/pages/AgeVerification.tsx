@@ -107,7 +107,7 @@ const AgeVerification = () => {
     if (age < 18) {
       toast({
         title: "Age Requirement Not Met",
-        description: "You must be at least 18 years old to use Fetch. We're sorry, but we cannot create an account for you at this time.",
+        description: "You must be at least 18 years old to use Pawfect Match. We're sorry, but we cannot create an account for you at this time.",
         variant: "destructive",
       });
       return;
@@ -166,7 +166,7 @@ const AgeVerification = () => {
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-4">
             <Dog className="w-10 h-10 text-primary-foreground" />
-            <h1 className="font-display text-4xl font-bold text-primary-foreground">fetch</h1>
+            <h1 className="font-display text-4xl font-bold text-primary-foreground">pawfect</h1>
           </div>
           <p className="text-primary-foreground/80">Age Verification Required</p>
         </div>
@@ -185,7 +185,7 @@ const AgeVerification = () => {
               <div className="text-sm">
                 <p className="font-medium text-foreground">Age Requirement</p>
                 <p className="text-muted-foreground mt-1">
-                  You must be at least 18 years old to use Fetch. This is a dating app for adults only.
+                  You must be at least 18 years old to use Pawfect Match. This is a dating app for adults only.
                 </p>
               </div>
             </div>
