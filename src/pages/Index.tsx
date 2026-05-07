@@ -48,7 +48,7 @@ const Index = () => {
           <div className="flex items-center justify-center gap-3 mb-6 animate-float">
             <Dog className="w-12 h-12 text-primary" />
             <h1 className="font-display text-6xl md:text-7xl font-bold text-primary-foreground">
-              fetch
+              pawfect
             </h1>
           </div>
 
@@ -105,7 +105,7 @@ const Index = () => {
             Dating, with a <span className="text-gradient">shared love</span>
           </h2>
           <p className="text-muted-foreground text-center mb-12 max-w-xl mx-auto">
-            Fetch is a dating app for people, not pets. Your dog is just the best icebreaker you'll ever have.
+            Pawfect Match is a dating app for people, not pets. Your dog is just the best icebreaker you'll ever have.
           </p>
 
           <div className="grid md:grid-cols-3 gap-8">
@@ -167,9 +167,9 @@ const Index = () => {
         <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <Dog className="w-6 h-6 text-primary" />
-            <span className="font-display text-xl font-bold text-primary-foreground">fetch</span>
+            <span className="font-display text-xl font-bold text-primary-foreground">pawfect</span>
           </div>
-          <p className="text-sm">© 2024 Fetch. Made with ❤️ for dog lovers.</p>
+          <p className="text-sm">© 2024 Pawfect Match. Made with ❤️ for dog lovers.</p>
         </div>
       </footer>
     </div>
