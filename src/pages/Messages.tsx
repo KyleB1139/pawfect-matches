@@ -400,22 +400,8 @@ const Messages = () => {
         .single();
 
       if (recipientProfile) {
-        // Get sender name
-        const { data: senderProfile } = await supabase
-          .from("profiles")
-          .select("dog_name, name")
-          .eq("id", userProfileId)
-          .single();
-
-        const senderName = senderProfile?.dog_name || senderProfile?.name || "Someone";
-
         await supabase.functions.invoke("send-push-notification", {
-          body: {
-            userId: recipientProfile.user_id,
-            title: `New message from ${senderName}`,
-            body: messageContent.length > 50 ? messageContent.substring(0, 50) + "..." : messageContent,
-            url: "/messages",
-          },
+          body: { type: "message", targetProfileId: recipientProfileId },
         });
       }
     } catch (pushError) {

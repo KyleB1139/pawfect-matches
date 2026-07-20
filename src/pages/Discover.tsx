@@ -493,21 +493,8 @@ const Discover = () => {
     if (isMatch) {
       // Send push notification to matched user
       try {
-        const { data: myProfile } = await supabase
-          .from("profiles")
-          .select("dog_name, name")
-          .eq("id", userProfileId)
-          .single();
-
-        const myName = myProfile?.dog_name || myProfile?.name || "Someone";
-
         await supabase.functions.invoke("send-push-notification", {
-          body: {
-            userId: currentProfile.user_id,
-            title: "It's a match! 🎉",
-            body: `You and ${myName} liked each other!`,
-            url: "/matches",
-          },
+          body: { type: "match", targetProfileId: currentProfile.id },
         });
       } catch (pushError) {
         console.error("Failed to send match notification:", pushError);
@@ -584,21 +571,8 @@ const Discover = () => {
 
     // Send push notification to the recipient
     try {
-      const { data: myProfile } = await supabase
-        .from("profiles")
-        .select("dog_name, name")
-        .eq("id", userProfileId)
-        .single();
-
-      const myName = myProfile?.dog_name || myProfile?.name || "Someone";
-
       await supabase.functions.invoke("send-push-notification", {
-        body: {
-          userId: currentProfile.user_id,
-          title: "⭐ You got a Super Like!",
-          body: `${myName} super liked you! Check them out!`,
-          url: "/discover",
-        },
+        body: { type: "super_like", targetProfileId: currentProfile.id },
       });
     } catch (pushError) {
       console.error("Failed to send super like notification:", pushError);
@@ -620,21 +594,8 @@ const Discover = () => {
     if (isMatch) {
       // Send push notification to matched user
       try {
-        const { data: myProfile } = await supabase
-          .from("profiles")
-          .select("dog_name, name")
-          .eq("id", userProfileId)
-          .single();
-
-        const myName = myProfile?.dog_name || myProfile?.name || "Someone";
-
         await supabase.functions.invoke("send-push-notification", {
-          body: {
-            userId: currentProfile.user_id,
-            title: "It's a match! 🎉",
-            body: `You and ${myName} liked each other!`,
-            url: "/matches",
-          },
+          body: { type: "match", targetProfileId: currentProfile.id },
         });
       } catch (pushError) {
         console.error("Failed to send match notification:", pushError);
