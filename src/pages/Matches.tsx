@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { SignedImg } from "@/components/SignedImg";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -252,7 +253,7 @@ const Matches = () => {
                 className="p-4 flex items-center gap-4 hover:bg-accent/50 transition-colors"
               >
                 <div className="relative">
-                  <img
+                  <SignedImg
                     src={match.dog_photo_url || match.avatar_url || "/placeholder.svg"}
                     alt={match.dog_name || match.name}
                     className="w-16 h-16 rounded-full object-cover border-2 border-primary"

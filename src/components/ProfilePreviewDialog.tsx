@@ -1,4 +1,5 @@
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { SignedImg } from "@/components/SignedImg";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -164,7 +165,7 @@ const ProfilePreviewDialog = ({
           <ScrollArea className="max-h-[90vh]">
             {/* Photo Section */}
             <div className="relative aspect-square">
-              <img
+              <SignedImg
                 src={allImages[currentPhotoIndex]}
                 alt={profile.name}
                 className="w-full h-full object-cover"

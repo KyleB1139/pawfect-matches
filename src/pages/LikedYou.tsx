@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { SignedAvatarImage } from "@/components/SignedImg";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -351,7 +352,7 @@ const LikedYou = () => {
                 <CardContent className="p-4">
                   <div className="flex items-center gap-4">
                     <Avatar className="w-16 h-16 border-2 border-border">
-                      <AvatarImage src={like.profile.avatar_url || undefined} />
+                      <SignedAvatarImage src={like.profile.avatar_url || undefined} />
                       <AvatarFallback>
                         <User className="w-8 h-8" />
                       </AvatarFallback>

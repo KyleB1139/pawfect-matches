@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { SignedImg } from "@/components/SignedImg";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -419,7 +420,7 @@ const Profile = () => {
           <div className="flex items-center gap-4">
             <div className="relative w-24 h-24 rounded-full overflow-hidden bg-muted">
               {(avatarPreview || profile.avatar_url) ? (
-                <img 
+                <SignedImg 
                   src={avatarPreview || profile.avatar_url} 
                   alt="Profile" 
                   className="w-full h-full object-cover"
@@ -799,7 +800,7 @@ const Profile = () => {
           <div className="flex items-center gap-4">
             <div className="relative w-20 h-20 rounded-xl overflow-hidden bg-muted">
               {(dogPhotoPreview || profile.dog_photo_url) ? (
-                <img 
+                <SignedImg 
                   src={dogPhotoPreview || profile.dog_photo_url} 
                   alt="Dog" 
                   className="w-full h-full object-cover"

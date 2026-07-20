@@ -1,4 +1,5 @@
 import { Heart } from "lucide-react";
+import { SignedImg } from "@/components/SignedImg";
 import { Button } from "@/components/ui/button";
 import { ProfileData } from "@/pages/Discover";
 
@@ -18,7 +19,7 @@ const MatchScreen = ({ profile, onContinue, onMessage }: MatchScreenProps) => {
         <div className="relative mb-8">
           <div className="flex items-center justify-center gap-4">
             <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-primary shadow-card-hover">
-              <img
+              <SignedImg
                 src={displayImage}
                 alt={profile.name}
                 className="w-full h-full object-cover"

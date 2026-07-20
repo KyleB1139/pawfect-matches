@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { SignedImg } from "@/components/SignedImg";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -453,7 +454,7 @@ const Messages = () => {
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div className="relative">
-              <img
+              <SignedImg
                 src={activeConversation.other_profile?.dog_photo_url || activeConversation.other_profile?.avatar_url || "/placeholder.svg"}
                 alt={activeConversation.other_profile?.dog_name || ""}
                 className="w-10 h-10 rounded-full object-cover border border-border"
@@ -562,7 +563,7 @@ const Messages = () => {
                 onClick={() => setActiveConversation(convo)}
               >
                 <div className="relative">
-                  <img
+                  <SignedImg
                     src={convo.other_profile?.dog_photo_url || convo.other_profile?.avatar_url || "/placeholder.svg"}
                     alt={convo.other_profile?.dog_name || ""}
                     className="w-14 h-14 rounded-full object-cover border-2 border-border"

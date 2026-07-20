@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { SignedImg } from "@/components/SignedImg";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
@@ -241,7 +242,7 @@ export const PhotoGallery = ({
               photo.is_primary ? "border-primary" : "border-transparent"
             )}
           >
-            <img
+            <SignedImg
               src={photo.photo_url}
               alt="Profile photo"
               className="w-full h-full object-cover"

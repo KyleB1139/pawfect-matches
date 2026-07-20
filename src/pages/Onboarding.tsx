@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { SignedImg } from "@/components/SignedImg";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -674,7 +675,7 @@ const Onboarding = () => {
                 <div className="flex items-center gap-4 mt-4">
                   <div className="relative w-24 h-24 rounded-full overflow-hidden bg-muted border-2 border-dashed border-border">
                     {(avatarPreview || data.avatar_url) ? (
-                      <img
+                      <SignedImg
                         src={avatarPreview || data.avatar_url}
                         alt="Profile"
                         className="w-full h-full object-cover"
@@ -714,7 +715,7 @@ const Onboarding = () => {
                 <div className="flex items-center gap-4 mt-4">
                   <div className="relative w-24 h-24 rounded-2xl overflow-hidden bg-muted border-2 border-dashed border-border">
                     {(dogPhotoPreview || data.dog_photo_url) ? (
-                      <img
+                      <SignedImg
                         src={dogPhotoPreview || data.dog_photo_url}
                         alt="Dog"
                         className="w-full h-full object-cover"

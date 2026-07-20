@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { SignedImg } from "@/components/SignedImg";
 import { Heart, X, Star, MapPin, Dog, Navigation, ChevronLeft, ChevronRight, Briefcase, Ruler, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -86,7 +87,7 @@ const ProfileCard = ({ profile, onLike, onNope, onSuperLike, superLikesRemaining
         onClick={() => setShowDetails(!showDetails)}
       >
         {/* Image */}
-        <img
+        <SignedImg
           src={allImages[currentPhotoIndex]}
           alt={`${profile.name} with ${profile.dog_name}`}
           className="absolute inset-0 w-full h-full object-cover transition-opacity duration-300"

@@ -1,0 +1,303 @@
+diff --git a/src/components/MatchScreen.tsx b/src/components/MatchScreen.tsx
+index 12c475f..1ff9288 100644
+--- a/src/components/MatchScreen.tsx
++++ b/src/components/MatchScreen.tsx
+@@ -1,4 +1,5 @@
+ import { Heart } from "lucide-react";
++import { SignedImg } from "@/components/SignedImg";
+ import { Button } from "@/components/ui/button";
+ import { ProfileData } from "@/pages/Discover";
+ 
+@@ -18,7 +19,7 @@ const MatchScreen = ({ profile, onContinue, onMessage }: MatchScreenProps) => {
+         <div className="relative mb-8">
+           <div className="flex items-center justify-center gap-4">
+             <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-primary shadow-card-hover">
+-              <img
++              <SignedImg
+                 src={displayImage}
+                 alt={profile.name}
+                 className="w-full h-full object-cover"
+diff --git a/src/components/PhotoGallery.tsx b/src/components/PhotoGallery.tsx
+index 33ec15a..87db7b5 100644
+--- a/src/components/PhotoGallery.tsx
++++ b/src/components/PhotoGallery.tsx
+@@ -1,4 +1,5 @@
+ import { useState, useRef } from "react";
++import { SignedImg } from "@/components/SignedImg";
+ import { supabase } from "@/integrations/supabase/client";
+ import { Button } from "@/components/ui/button";
+ import { toast } from "@/hooks/use-toast";
+@@ -241,7 +242,7 @@ export const PhotoGallery = ({
+               photo.is_primary ? "border-primary" : "border-transparent"
+             )}
+           >
+-            <img
++            <SignedImg
+               src={photo.photo_url}
+               alt="Profile photo"
+               className="w-full h-full object-cover"
+diff --git a/src/components/ProfileCard.tsx b/src/components/ProfileCard.tsx
+index 872fdef..879fd68 100644
+--- a/src/components/ProfileCard.tsx
++++ b/src/components/ProfileCard.tsx
+@@ -1,4 +1,5 @@
+ import { useState } from "react";
++import { SignedImg } from "@/components/SignedImg";
+ import { Heart, X, Star, MapPin, Dog, Navigation, ChevronLeft, ChevronRight, Briefcase, Ruler, GraduationCap } from "lucide-react";
+ import { Button } from "@/components/ui/button";
+ import { Badge } from "@/components/ui/badge";
+@@ -86,7 +87,7 @@ const ProfileCard = ({ profile, onLike, onNope, onSuperLike, superLikesRemaining
+         onClick={() => setShowDetails(!showDetails)}
+       >
+         {/* Image */}
+-        <img
++        <SignedImg
+           src={allImages[currentPhotoIndex]}
+           alt={`${profile.name} with ${profile.dog_name}`}
+           className="absolute inset-0 w-full h-full object-cover transition-opacity duration-300"
+diff --git a/src/components/ProfilePreviewDialog.tsx b/src/components/ProfilePreviewDialog.tsx
+index d123e07..41cbdcd 100644
+--- a/src/components/ProfilePreviewDialog.tsx
++++ b/src/components/ProfilePreviewDialog.tsx
+@@ -1,4 +1,5 @@
+ import { Dialog, DialogContent } from "@/components/ui/dialog";
++import { SignedImg } from "@/components/SignedImg";
+ import { Badge } from "@/components/ui/badge";
+ import { Button } from "@/components/ui/button";
+ import { ScrollArea } from "@/components/ui/scroll-area";
+@@ -164,7 +165,7 @@ const ProfilePreviewDialog = ({
+           <ScrollArea className="max-h-[90vh]">
+             {/* Photo Section */}
+             <div className="relative aspect-square">
+-              <img
++              <SignedImg
+                 src={allImages[currentPhotoIndex]}
+                 alt={profile.name}
+                 className="w-full h-full object-cover"
+diff --git a/src/components/SignedImg.tsx b/src/components/SignedImg.tsx
+new file mode 100644
+index 0000000..c640685
+--- /dev/null
++++ b/src/components/SignedImg.tsx
+@@ -0,0 +1,39 @@
++import { useEffect, useState, type ImgHTMLAttributes, type ComponentProps } from "react";
++import { AvatarImage } from "@/components/ui/avatar";
++import { getSignedPhotoUrl, parseStorageUrl } from "@/lib/signedPhotos";
++
++export function useSignedUrl(src: string | null | undefined): string | undefined {
++  const [signed, setSigned] = useState<string | undefined>(() =>
++    src && !parseStorageUrl(src) ? src : undefined
++  );
++
++  useEffect(() => {
++    if (src && !parseStorageUrl(src)) {
++      setSigned(src);
++      return;
++    }
++    let alive = true;
++    getSignedPhotoUrl(src).then((u) => {
++      if (alive) setSigned(u);
++    });
++    return () => {
++      alive = false;
++    };
++  }, [src]);
++
++  return signed;
++}
++
++// Drop-in replacement for <img> that signs Supabase Storage URLs.
++export function SignedImg(props: ImgHTMLAttributes<HTMLImageElement>) {
++  const { src, ...rest } = props;
++  const signed = useSignedUrl(src);
++  return <img src={signed} {...rest} />;
++}
++
++// Drop-in replacement for shadcn <AvatarImage>.
++export function SignedAvatarImage(props: ComponentProps<typeof AvatarImage>) {
++  const { src, ...rest } = props;
++  const signed = useSignedUrl(src ?? undefined);
++  return <AvatarImage src={signed} {...rest} />;
++}
+diff --git a/src/lib/signedPhotos.ts b/src/lib/signedPhotos.ts
+new file mode 100644
+index 0000000..ad72b84
+--- /dev/null
++++ b/src/lib/signedPhotos.ts
+@@ -0,0 +1,43 @@
++import { supabase } from "@/integrations/supabase/client";
++
++// Buckets are private: stored "public" URLs are used only as bucket+path
++// encodings and must be exchanged for signed URLs at display time.
++const BUCKETS = ["profile-photos", "avatars", "dog-photos"];
++const SIGN_TTL_SECONDS = 3600;
++const CACHE_TTL_MS = 50 * 60 * 1000;
++
++const cache = new Map<string, { url: string; expires: number }>();
++
++export function parseStorageUrl(
++  url: string
++): { bucket: string; path: string } | null {
++  for (const bucket of BUCKETS) {
++    const marker = `/${bucket}/`;
++    const idx = url.indexOf(marker);
++    if (idx !== -1) {
++      let path = url.slice(idx + marker.length);
++      const q = path.indexOf("?");
++      if (q !== -1) path = path.slice(0, q);
++      return { bucket, path: decodeURIComponent(path) };
++    }
++  }
++  return null;
++}
++
++export async function getSignedPhotoUrl(
++  url: string | null | undefined
++): Promise<string | undefined> {
++  if (!url) return undefined;
++  const parsed = parseStorageUrl(url);
++  if (!parsed) return url; // blob:, data:, local assets, external URLs
++  const key = `${parsed.bucket}/${parsed.path}`;
++  const now = Date.now();
++  const hit = cache.get(key);
++  if (hit && hit.expires > now) return hit.url;
++  const { data, error } = await supabase.storage
++    .from(parsed.bucket)
++    .createSignedUrl(parsed.path, SIGN_TTL_SECONDS);
++  if (error || !data?.signedUrl) return url;
++  cache.set(key, { url: data.signedUrl, expires: now + CACHE_TTL_MS });
++  return data.signedUrl;
++}
+diff --git a/src/pages/LikedYou.tsx b/src/pages/LikedYou.tsx
+index 7eb3e12..e3accdf 100644
+--- a/src/pages/LikedYou.tsx
++++ b/src/pages/LikedYou.tsx
+@@ -1,4 +1,5 @@
+ import { useState, useEffect } from "react";
++import { SignedAvatarImage } from "@/components/SignedImg";
+ import { useNavigate } from "react-router-dom";
+ import { supabase } from "@/integrations/supabase/client";
+ import { useAuth } from "@/contexts/AuthContext";
+@@ -351,7 +352,7 @@ const LikedYou = () => {
+                 <CardContent className="p-4">
+                   <div className="flex items-center gap-4">
+                     <Avatar className="w-16 h-16 border-2 border-border">
+-                      <AvatarImage src={like.profile.avatar_url || undefined} />
++                      <SignedAvatarImage src={like.profile.avatar_url || undefined} />
+                       <AvatarFallback>
+                         <User className="w-8 h-8" />
+                       </AvatarFallback>
+diff --git a/src/pages/Matches.tsx b/src/pages/Matches.tsx
+index e4c629b..6773af3 100644
+--- a/src/pages/Matches.tsx
++++ b/src/pages/Matches.tsx
+@@ -1,4 +1,5 @@
+ import { useState, useEffect, useMemo } from "react";
++import { SignedImg } from "@/components/SignedImg";
+ import { useNavigate, Link } from "react-router-dom";
+ import { useAuth } from "@/contexts/AuthContext";
+ import { supabase } from "@/integrations/supabase/client";
+@@ -252,7 +253,7 @@ const Matches = () => {
+                 className="p-4 flex items-center gap-4 hover:bg-accent/50 transition-colors"
+               >
+                 <div className="relative">
+-                  <img
++                  <SignedImg
+                     src={match.dog_photo_url || match.avatar_url || "/placeholder.svg"}
+                     alt={match.dog_name || match.name}
+                     className="w-16 h-16 rounded-full object-cover border-2 border-primary"
+diff --git a/src/pages/Messages.tsx b/src/pages/Messages.tsx
+index c091987..29308bd 100644
+--- a/src/pages/Messages.tsx
++++ b/src/pages/Messages.tsx
+@@ -1,4 +1,5 @@
+ import { useState, useEffect, useRef } from "react";
++import { SignedImg } from "@/components/SignedImg";
+ import { useNavigate } from "react-router-dom";
+ import { useAuth } from "@/contexts/AuthContext";
+ import { supabase } from "@/integrations/supabase/client";
+@@ -453,7 +454,7 @@ const Messages = () => {
+               <ArrowLeft className="w-5 h-5" />
+             </Button>
+             <div className="relative">
+-              <img
++              <SignedImg
+                 src={activeConversation.other_profile?.dog_photo_url || activeConversation.other_profile?.avatar_url || "/placeholder.svg"}
+                 alt={activeConversation.other_profile?.dog_name || ""}
+                 className="w-10 h-10 rounded-full object-cover border border-border"
+@@ -562,7 +563,7 @@ const Messages = () => {
+                 onClick={() => setActiveConversation(convo)}
+               >
+                 <div className="relative">
+-                  <img
++                  <SignedImg
+                     src={convo.other_profile?.dog_photo_url || convo.other_profile?.avatar_url || "/placeholder.svg"}
+                     alt={convo.other_profile?.dog_name || ""}
+                     className="w-14 h-14 rounded-full object-cover border-2 border-border"
+diff --git a/src/pages/Onboarding.tsx b/src/pages/Onboarding.tsx
+index b5a709b..b9f26a7 100644
+--- a/src/pages/Onboarding.tsx
++++ b/src/pages/Onboarding.tsx
+@@ -1,4 +1,5 @@
+ import { useState, useEffect } from "react";
++import { SignedImg } from "@/components/SignedImg";
+ import { useNavigate } from "react-router-dom";
+ import { useAuth } from "@/contexts/AuthContext";
+ import { supabase } from "@/integrations/supabase/client";
+@@ -674,7 +675,7 @@ const Onboarding = () => {
+                 <div className="flex items-center gap-4 mt-4">
+                   <div className="relative w-24 h-24 rounded-full overflow-hidden bg-muted border-2 border-dashed border-border">
+                     {(avatarPreview || data.avatar_url) ? (
+-                      <img
++                      <SignedImg
+                         src={avatarPreview || data.avatar_url}
+                         alt="Profile"
+                         className="w-full h-full object-cover"
+@@ -714,7 +715,7 @@ const Onboarding = () => {
+                 <div className="flex items-center gap-4 mt-4">
+                   <div className="relative w-24 h-24 rounded-2xl overflow-hidden bg-muted border-2 border-dashed border-border">
+                     {(dogPhotoPreview || data.dog_photo_url) ? (
+-                      <img
++                      <SignedImg
+                         src={dogPhotoPreview || data.dog_photo_url}
+                         alt="Dog"
+                         className="w-full h-full object-cover"
+diff --git a/src/pages/Profile.tsx b/src/pages/Profile.tsx
+index 5be7de2..a44bf18 100644
+--- a/src/pages/Profile.tsx
++++ b/src/pages/Profile.tsx
+@@ -1,4 +1,5 @@
+ import { useState, useEffect } from "react";
++import { SignedImg } from "@/components/SignedImg";
+ import { useNavigate } from "react-router-dom";
+ import { useAuth } from "@/contexts/AuthContext";
+ import { supabase } from "@/integrations/supabase/client";
+@@ -419,7 +420,7 @@ const Profile = () => {
+           <div className="flex items-center gap-4">
+             <div className="relative w-24 h-24 rounded-full overflow-hidden bg-muted">
+               {(avatarPreview || profile.avatar_url) ? (
+-                <img 
++                <SignedImg 
+                   src={avatarPreview || profile.avatar_url} 
+                   alt="Profile" 
+                   className="w-full h-full object-cover"
+@@ -799,7 +800,7 @@ const Profile = () => {
+           <div className="flex items-center gap-4">
+             <div className="relative w-20 h-20 rounded-xl overflow-hidden bg-muted">
+               {(dogPhotoPreview || profile.dog_photo_url) ? (
+-                <img 
++                <SignedImg 
+                   src={dogPhotoPreview || profile.dog_photo_url} 
+                   alt="Dog" 
+                   className="w-full h-full object-cover"
+diff --git a/supabase/migrations/20260720000001_private_photo_buckets.sql b/supabase/migrations/20260720000001_private_photo_buckets.sql
+new file mode 100644
+index 0000000..5c7ebb9
+--- /dev/null
++++ b/supabase/migrations/20260720000001_private_photo_buckets.sql
+@@ -0,0 +1,5 @@
++-- Photos were served from public buckets, bypassing the authenticated-only
++-- SELECT policies. Buckets are now private; the app signs URLs at display time.
++UPDATE storage.buckets
++SET public = false
++WHERE id IN ('avatars', 'dog-photos', 'profile-photos');
