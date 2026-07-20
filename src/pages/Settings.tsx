@@ -66,13 +66,9 @@ const Settings = () => {
     
     setIsDeleting(true);
     try {
-      // Delete user's profile first (cascades to related data via RLS)
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .delete()
-        .eq("user_id", user.id);
-
-      if (profileError) throw profileError;
+      // Server-side deletion: profile, photos, and the auth user itself
+      const { error: deleteError } = await supabase.functions.invoke("delete-account");
+      if (deleteError) throw deleteError;
 
       // Sign out the user
       await signOut();

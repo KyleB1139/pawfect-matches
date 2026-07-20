@@ -1,0 +1,177 @@
+diff --git a/src/contexts/AuthContext.tsx b/src/contexts/AuthContext.tsx
+index 6d4009c..31c3492 100644
+--- a/src/contexts/AuthContext.tsx
++++ b/src/contexts/AuthContext.tsx
+@@ -21,6 +21,25 @@ export const useAuth = () => {
+   return context;
+ };
+ 
++// If the profile row is ever missing (e.g. interrupted signup), recreate it
++// so the app never runs in a broken half-account state.
++const ensureProfileExists = async (user: User) => {
++  try {
++    const { data, error } = await supabase
++      .from("profiles")
++      .select("id")
++      .eq("user_id", user.id)
++      .maybeSingle();
++    if (error || data) return;
++    await supabase.from("profiles").insert({
++      user_id: user.id,
++      name: (user.user_metadata?.name as string) || "New User",
++    });
++  } catch {
++    // Non-fatal: pages will surface errors if the profile is truly unavailable
++  }
++};
++
+ export const AuthProvider = ({ children }: { children: ReactNode }) => {
+   const [user, setUser] = useState<User | null>(null);
+   const [session, setSession] = useState<Session | null>(null);
+@@ -33,6 +52,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
+         setSession(session);
+         setUser(session?.user ?? null);
+         setLoading(false);
++        if (session?.user) {
++          setTimeout(() => ensureProfileExists(session.user), 0);
++        }
+       }
+     );
+ 
+diff --git a/src/pages/Profile.tsx b/src/pages/Profile.tsx
+index a44bf18..e195c94 100644
+--- a/src/pages/Profile.tsx
++++ b/src/pages/Profile.tsx
+@@ -305,7 +305,7 @@ const Profile = () => {
+         if (url) dogPhotoUrl = url;
+       }
+       
+-      const { error } = await supabase
++      const { data: updatedRows, error } = await supabase
+         .from("profiles")
+         .update({
+           name: profile.name,
+@@ -334,9 +334,13 @@ const Profile = () => {
+           wants_kids: profile.wants_kids || null,
+           interests: profile.interests,
+         } as any)
+-        .eq("user_id", user.id);
++        .eq("user_id", user.id)
++        .select("id");
+       
+       if (error) throw error;
++      if (!updatedRows || updatedRows.length === 0) {
++        throw new Error("No profile row was updated");
++      }
+       
+       toast({
+         title: "Profile saved! 🐕",
+diff --git a/src/pages/Settings.tsx b/src/pages/Settings.tsx
+index 778531d..917fc20 100644
+--- a/src/pages/Settings.tsx
++++ b/src/pages/Settings.tsx
+@@ -66,13 +66,9 @@ const Settings = () => {
+     
+     setIsDeleting(true);
+     try {
+-      // Delete user's profile first (cascades to related data via RLS)
+-      const { error: profileError } = await supabase
+-        .from("profiles")
+-        .delete()
+-        .eq("user_id", user.id);
+-
+-      if (profileError) throw profileError;
++      // Server-side deletion: profile, photos, and the auth user itself
++      const { error: deleteError } = await supabase.functions.invoke("delete-account");
++      if (deleteError) throw deleteError;
+ 
+       // Sign out the user
+       await signOut();
+diff --git a/supabase/config.toml b/supabase/config.toml
+index 1b11a8b..92b3698 100644
+--- a/supabase/config.toml
++++ b/supabase/config.toml
+@@ -5,3 +5,6 @@ verify_jwt = false
+ 
+ [functions.backup-codes]
+ verify_jwt = true
++
++[functions.delete-account]
++verify_jwt = true
+diff --git a/supabase/functions/delete-account/index.ts b/supabase/functions/delete-account/index.ts
+new file mode 100644
+index 0000000..fb7f946
+--- /dev/null
++++ b/supabase/functions/delete-account/index.ts
+@@ -0,0 +1,71 @@
++import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
++
++const corsHeaders = {
++  "Access-Control-Allow-Origin": "*",
++  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
++};
++
++const PHOTO_BUCKETS = ["avatars", "dog-photos", "profile-photos"];
++
++Deno.serve(async (req) => {
++  if (req.method === "OPTIONS") {
++    return new Response(null, { headers: corsHeaders });
++  }
++
++  try {
++    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
++    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
++
++    const authHeader = req.headers.get("Authorization");
++    if (!authHeader) {
++      return new Response(JSON.stringify({ error: "Missing authorization header" }), {
++        status: 401,
++        headers: { ...corsHeaders, "Content-Type": "application/json" },
++      });
++    }
++
++    const admin = createClient(supabaseUrl, serviceKey);
++    const { data: { user }, error: userError } = await admin.auth.getUser(
++      authHeader.replace("Bearer ", "")
++    );
++
++    if (userError || !user) {
++      return new Response(JSON.stringify({ error: "Unauthorized" }), {
++        status: 401,
++        headers: { ...corsHeaders, "Content-Type": "application/json" },
++      });
++    }
++
++    // Delete the user's uploaded photos
++    for (const bucket of PHOTO_BUCKETS) {
++      const { data: files } = await admin.storage.from(bucket).list(user.id);
++      if (files && files.length > 0) {
++        await admin.storage
++          .from(bucket)
++          .remove(files.map((f) => `${user.id}/${f.name}`));
++      }
++    }
++
++    // Delete the profile row (FK cascades clean up likes, messages, etc.)
++    const { error: profileError } = await admin
++      .from("profiles")
++      .delete()
++      .eq("user_id", user.id);
++    if (profileError) throw profileError;
++
++    // Delete the auth user itself — no more zombie logins
++    const { error: deleteError } = await admin.auth.admin.deleteUser(user.id);
++    if (deleteError) throw deleteError;
++
++    return new Response(JSON.stringify({ success: true }), {
++      headers: { ...corsHeaders, "Content-Type": "application/json" },
++    });
++  } catch (error: unknown) {
++    const message = error instanceof Error ? error.message : "Unknown error";
++    console.error("delete-account error:", message);
++    return new Response(JSON.stringify({ error: message }), {
++      status: 500,
++      headers: { ...corsHeaders, "Content-Type": "application/json" },
++    });
++  }
++});

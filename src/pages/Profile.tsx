@@ -305,7 +305,7 @@ const Profile = () => {
         if (url) dogPhotoUrl = url;
       }
       
-      const { error } = await supabase
+      const { data: updatedRows, error } = await supabase
         .from("profiles")
         .update({
           name: profile.name,
@@ -334,9 +334,13 @@ const Profile = () => {
           wants_kids: profile.wants_kids || null,
           interests: profile.interests,
         } as any)
-        .eq("user_id", user.id);
+        .eq("user_id", user.id)
+        .select("id");
       
       if (error) throw error;
+      if (!updatedRows || updatedRows.length === 0) {
+        throw new Error("No profile row was updated");
+      }
       
       toast({
         title: "Profile saved! 🐕",

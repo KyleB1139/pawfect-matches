@@ -21,6 +21,25 @@ export const useAuth = () => {
   return context;
 };
 
+// If the profile row is ever missing (e.g. interrupted signup), recreate it
+// so the app never runs in a broken half-account state.
+const ensureProfileExists = async (user: User) => {
+  try {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (error || data) return;
+    await supabase.from("profiles").insert({
+      user_id: user.id,
+      name: (user.user_metadata?.name as string) || "New User",
+    });
+  } catch {
+    // Non-fatal: pages will surface errors if the profile is truly unavailable
+  }
+};
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -33,6 +52,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+        if (session?.user) {
+          setTimeout(() => ensureProfileExists(session.user), 0);
+        }
       }
     );
 
