@@ -1,0 +1,81 @@
+diff --git a/src/pages/Messages.tsx b/src/pages/Messages.tsx
+index 53d7dc4..c091987 100644
+--- a/src/pages/Messages.tsx
++++ b/src/pages/Messages.tsx
+@@ -200,13 +200,9 @@ const Messages = () => {
+   const markMessagesAsRead = async (conversationId: string) => {
+     if (!userProfileId) return;
+     
+-    // Mark all unread messages from other users as read
+-    await supabase
+-      .from('messages')
+-      .update({ read_at: new Date().toISOString() })
+-      .eq('conversation_id', conversationId)
+-      .neq('sender_id', userProfileId)
+-      .is('read_at', null);
++    // Mark all unread messages from other users as read (server-side RPC;
++    // direct UPDATE is no longer allowed by RLS to prevent message tampering)
++    await supabase.rpc('mark_conversation_read', { _conversation_id: conversationId });
+   };
+ 
+   const sendTypingIndicator = (isTyping: boolean) => {
+diff --git a/supabase/migrations/20260720000000_security_fixes.sql b/supabase/migrations/20260720000000_security_fixes.sql
+new file mode 100644
+index 0000000..d7a896d
+--- /dev/null
++++ b/supabase/migrations/20260720000000_security_fixes.sql
+@@ -0,0 +1,54 @@
++-- Security fixes (audit 2026-07-20)
++
++-- 1. CRITICAL: profiles were readable by ANYONE on the internet with the public
++--    anon key (no account needed), including GPS latitude/longitude.
++DROP POLICY IF EXISTS "Users can view all profiles" ON public.profiles;
++CREATE POLICY "Authenticated users can view profiles"
++  ON public.profiles FOR SELECT
++  USING (auth.uid() IS NOT NULL);
++
++-- 2. Helper: mutual-match check (same logic as get_user_matches)
++CREATE OR REPLACE FUNCTION public.are_profiles_matched(_p1 uuid, _p2 uuid)
++RETURNS boolean
++LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
++AS $$
++  SELECT EXISTS (
++    SELECT 1
++    FROM public.likes l1
++    JOIN public.likes l2
++      ON l1.user_id = l2.liked_profile_id
++     AND l1.liked_profile_id = l2.user_id
++    WHERE l1.user_id = _p1 AND l1.liked_profile_id = _p2
++  );
++$$;
++
++-- 3. HIGH: any user could open a conversation with any profile (bypassing
++--    matching entirely). Now requires a mutual match.
++DROP POLICY IF EXISTS "Users can create conversations with matches" ON public.conversations;
++CREATE POLICY "Users can create conversations with matches"
++  ON public.conversations FOR INSERT
++  WITH CHECK (
++    (participant_1_id = public.get_user_profile_id(auth.uid())
++     OR participant_2_id = public.get_user_profile_id(auth.uid()))
++    AND public.are_profiles_matched(participant_1_id, participant_2_id)
++  );
++
++-- 4. HIGH: the mark-as-read policy allowed a participant to UPDATE any column
++--    of the OTHER person's messages (i.e., edit their message text).
++--    Replaced with a server-side function that can only set read_at.
++DROP POLICY IF EXISTS "Users can mark messages as read in their conversations" ON public.messages;
++
++CREATE OR REPLACE FUNCTION public.mark_conversation_read(_conversation_id uuid)
++RETURNS void
++LANGUAGE sql SECURITY DEFINER SET search_path = public
++AS $$
++  UPDATE public.messages
++  SET read_at = now()
++  WHERE conversation_id = _conversation_id
++    AND read_at IS NULL
++    AND sender_id <> public.get_user_profile_id(auth.uid())
++    AND public.is_conversation_participant(auth.uid(), _conversation_id);
++$$;
++
++REVOKE ALL ON FUNCTION public.mark_conversation_read(uuid) FROM anon;
++GRANT EXECUTE ON FUNCTION public.mark_conversation_read(uuid) TO authenticated;

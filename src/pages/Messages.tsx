@@ -200,13 +200,9 @@ const Messages = () => {
   const markMessagesAsRead = async (conversationId: string) => {
     if (!userProfileId) return;
     
-    // Mark all unread messages from other users as read
-    await supabase
-      .from('messages')
-      .update({ read_at: new Date().toISOString() })
-      .eq('conversation_id', conversationId)
-      .neq('sender_id', userProfileId)
-      .is('read_at', null);
+    // Mark all unread messages from other users as read (server-side RPC;
+    // direct UPDATE is no longer allowed by RLS to prevent message tampering)
+    await supabase.rpc('mark_conversation_read', { _conversation_id: conversationId });
   };
 
   const sendTypingIndicator = (isTyping: boolean) => {
