@@ -1,0 +1,189 @@
+diff --git a/README.md b/README.md
+index 70b7c82..01e25ec 100644
+--- a/README.md
++++ b/README.md
+@@ -1,73 +1,43 @@
+-# Welcome to your Lovable project
++# Pawfect Match
+ 
+-## Project info
++Dating app for dog owners. React + TypeScript + Vite web app with a Supabase backend, packaged for iOS/Android via Capacitor.
+ 
+-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
++## Stack
+ 
+-## How can I edit this code?
++- **Frontend:** React 18, TypeScript, Vite, Tailwind, shadcn/ui
++- **Backend:** Supabase (Postgres + RLS, Auth, Realtime, Edge Functions)
++- **Mobile:** Capacitor 8 (iOS + Android)
+ 
+-There are several ways of editing your application.
+-
+-**Use Lovable**
+-
+-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+-
+-Changes made via Lovable will be committed automatically to this repo.
+-
+-**Use your preferred IDE**
+-
+-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+-
+-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+-
+-Follow these steps:
++## Local development
+ 
+ ```sh
+-# Step 1: Clone the repository using the project's Git URL.
+-git clone <YOUR_GIT_URL>
+-
+-# Step 2: Navigate to the project directory.
+-cd <YOUR_PROJECT_NAME>
+-
+-# Step 3: Install the necessary dependencies.
+-npm i
+-
+-# Step 4: Start the development server with auto-reloading and an instant preview.
+-npm run dev
++npm install
++npm run dev        # http://localhost:8080
+ ```
+ 
+-**Edit a file directly in GitHub**
+-
+-- Navigate to the desired file(s).
+-- Click the "Edit" button (pencil icon) at the top right of the file view.
+-- Make your changes and commit the changes.
++Requires a `.env` with:
+ 
+-**Use GitHub Codespaces**
+-
+-- Navigate to the main page of your repository.
+-- Click on the "Code" button (green button) near the top right.
+-- Select the "Codespaces" tab.
+-- Click on "New codespace" to launch a new Codespace environment.
+-- Edit files directly within the Codespace and commit and push your changes once you're done.
+-
+-## What technologies are used for this project?
+-
+-This project is built with:
+-
+-- Vite
+-- TypeScript
+-- React
+-- shadcn-ui
+-- Tailwind CSS
++```
++VITE_SUPABASE_URL=...
++VITE_SUPABASE_PUBLISHABLE_KEY=...
++VITE_SUPABASE_PROJECT_ID=...
++```
+ 
+-## How can I deploy this project?
++## Production build
+ 
+-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
++```sh
++npm run build      # outputs to dist/
++```
+ 
+-## Can I connect a custom domain to my Lovable project?
++## iOS build (requires macOS + Xcode)
+ 
+-Yes, you can!
++```sh
++npm run build
++npx cap add ios    # first time only
++npx cap sync ios
++npx cap open ios   # opens Xcode; sign & run from there
++```
+ 
+-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
++## Backend
+ 
+-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
++Database migrations live in `supabase/migrations/`, edge functions in `supabase/functions/`. Managed via the Supabase CLI against project defined in `supabase/config.toml`.
+diff --git a/capacitor.config.ts b/capacitor.config.ts
+index 4f54140..fcdf2f5 100644
+--- a/capacitor.config.ts
++++ b/capacitor.config.ts
+@@ -1,13 +1,9 @@
+ import type { CapacitorConfig } from '@capacitor/cli';
+ 
+ const config: CapacitorConfig = {
+-  appId: 'app.lovable.6dd251668baa4911a1edc06196deb7a1',
+-  appName: 'Fetch - Dog Dating',
+-  webDir: 'dist',
+-  server: {
+-    url: 'https://6dd25166-8baa-4911-a1ed-c06196deb7a1.lovableproject.com?forceHideBadge=true',
+-    cleartext: true
+-  }
++  appId: 'com.pawfectmatch.app',
++  appName: 'Pawfect Match',
++  webDir: 'dist'
+ };
+ 
+ export default config;
+diff --git a/index.html b/index.html
+index cbbe44f..bb7c54e 100644
+--- a/index.html
++++ b/index.html
+@@ -11,11 +11,11 @@
+     <meta property="og:title" content="Pawfect Match - Where Dog Lovers Find Their Perfect Match" />
+     <meta property="og:description" content="The dating app for single dog owners. Swipe, match, and plan dog park dates!" />
+     <meta property="og:type" content="website" />
+-    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
++    <meta property="og:image" content="/og-image.png" />
+ 
+     <meta name="twitter:card" content="summary_large_image" />
+     <meta name="twitter:site" content="@PawfectMatchApp" />
+-    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
++    <meta name="twitter:image" content="/og-image.png" />
+     
+     <link rel="canonical" href="https://pawfectmatch.app" />
+   </head>
+diff --git a/package.json b/package.json
+index 2879894..3e38288 100644
+--- a/package.json
++++ b/package.json
+@@ -1,7 +1,7 @@
+ {
+-  "name": "vite_react_shadcn_ts",
++  "name": "pawfect-match",
+   "private": true,
+-  "version": "0.0.0",
++  "version": "0.1.0",
+   "type": "module",
+   "scripts": {
+     "dev": "vite",
+@@ -78,7 +78,6 @@
+     "eslint-plugin-react-hooks": "^5.2.0",
+     "eslint-plugin-react-refresh": "^0.4.20",
+     "globals": "^15.15.0",
+-    "lovable-tagger": "^1.1.11",
+     "postcss": "^8.5.6",
+     "tailwindcss": "^3.4.17",
+     "typescript": "^5.8.3",
+diff --git a/vite.config.ts b/vite.config.ts
+index da25c6d..f6ae2a4 100644
+--- a/vite.config.ts
++++ b/vite.config.ts
+@@ -1,15 +1,14 @@
+ import { defineConfig } from "vite";
+ import react from "@vitejs/plugin-react-swc";
+ import path from "path";
+-import { componentTagger } from "lovable-tagger";
+ 
+ // https://vitejs.dev/config/
+-export default defineConfig(({ mode }) => ({
++export default defineConfig(() => ({
+   server: {
+     host: "::",
+     port: 8080,
+   },
+-  plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
++  plugins: [react()],
+   resolve: {
+     alias: {
+       "@": path.resolve(__dirname, "./src"),
